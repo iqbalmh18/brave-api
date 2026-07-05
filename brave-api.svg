@@ -1,0 +1,57 @@
+<svg width="1200" height="400" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Brave API banner, light theme</title>
+  <desc>Light, cream-toned terminal-styled banner with a subtle grid background for the Brave API Python client, reading Brave API with free, no login, no API key messaging and a View on GitHub button.</desc>
+
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0 L0 0 L0 40" fill="none" stroke="#E4DFD2" stroke-width="1"/>
+    </pattern>
+    <clipPath id="cardClip">
+      <rect x="1" y="1" width="1198" height="398" rx="18"/>
+    </clipPath>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="398" rx="18" fill="#FAF8F2" stroke="#E4DFD2" stroke-width="1.5"/>
+  <g clip-path="url(#cardClip)">
+    <rect x="1" y="1" width="1198" height="398" fill="url(#grid)"/>
+  </g>
+
+  <circle cx="52" cy="42" r="7" fill="#EE6A5F"/>
+  <circle cx="76" cy="42" r="7" fill="#F3B94E"/>
+  <circle cx="100" cy="42" r="7" fill="#3EB35E"/>
+  <text x="132" y="47" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="16" fill="#9A9384">~/brave-api</text>
+  <line x1="0" y1="72" x2="1200" y2="72" stroke="#E4DFD2" stroke-width="1"/>
+
+  <g stroke="#3B372E" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="90" y="120" width="230" height="160" rx="10" fill="#FFFFFF"/>
+    <rect x="106" y="136" width="198" height="128" rx="4" fill="#F7F4EC"/>
+    <path d="M40 300 L370 300 L350 320 L60 320 Z" fill="#FFFFFF"/>
+    <line x1="150" y1="280" x2="260" y2="280" stroke-width="6"/>
+  </g>
+
+  <g font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="13">
+    <text x="120" y="160" fill="#C15F3C">&gt; ask("brave api")</text>
+    <text x="120" y="180" fill="#3E8F5B">200 OK  no_key=true</text>
+    <text x="120" y="200" fill="#9A9384">web_results: 10</text>
+    <text x="120" y="220" fill="#9A9384">images: 4</text>
+    <text x="120" y="240" fill="#C15F3C">_</text>
+  </g>
+
+  <g stroke="#3B372E" stroke-width="7" fill="none" stroke-linecap="round">
+    <circle cx="262" cy="212" r="46" fill="#FAF8F2" fill-opacity="0.7"/>
+    <line x1="295" y1="245" x2="345" y2="295"/>
+  </g>
+  <circle cx="262" cy="212" r="46" fill="none" stroke="#D97757" stroke-width="2.5" stroke-dasharray="2 6"/>
+
+  <circle cx="440" cy="118" r="7" fill="#D97757"/>
+  <text x="464" y="124" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="17" font-weight="700" letter-spacing="1" fill="#C15F3C">FREE &#183; NO LOGIN &#183; NO API KEY REQUIRED</text>
+
+  <text x="440" y="200" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="52" font-weight="700" fill="#2B281F">Brave API</text>
+  <text x="440" y="248" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="24" fill="#8A8478">Ask and search Brave, straight from Python.</text>
+
+  <a href="https://github.com/iqbalmh18/brave-api">
+    <rect x="440" y="286" width="286" height="58" rx="10" fill="#D97757"/>
+    <text x="483" y="322" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="#FFFFFF">VIEW ON GITHUB</text>
+    <path d="M685 306 L703 315 L685 324" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </a>
+</svg>

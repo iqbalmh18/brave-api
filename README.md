@@ -1,12 +1,6 @@
 # Brave API
 
-<p align="center">
-  <a href="https://pypi.org/project/brave-api/"><img src="https://img.shields.io/pypi/v/brave-api.svg?color=3776AB&label=PyPI" alt="PyPI Version"></a>
-  <a href="https://pypi.org/project/brave-api/"><img src="https://img.shields.io/pypi/pyversions/brave-api.svg?color=FFD43B&logo=python&logoColor=3776AB" alt="Python Versions"></a>
-  <a href="https://github.com/iqbalmh18/brave-api/blob/main/LICENSE"><img src="https://img.shields.io/github/license/iqbalmh18/brave-api.svg?color=306998" alt="License"></a>
-  <a href="https://github.com/iqbalmh18/brave-api/stargazers"><img src="https://img.shields.io/github/stars/iqbalmh18/brave-api.svg?style=flat&color=FFE873" alt="GitHub Stars"></a>
-  <a href="https://pypi.org/project/brave-api/"><img src="https://img.shields.io/pypi/dm/brave-api.svg?color=3776AB&label=downloads" alt="PyPI Downloads"></a>
-</p>
+<img src="./brave-api.svg" alt="Brave API banner" />
 
 <p align="center">
 An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface.
@@ -71,11 +65,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 ## Installation
 
 ```bash
-pip install brave-api
-```
-
-```bash
-uv pip install brave-api
+uv pip install git+https://github.com/iqbalmh18/brave-api.git
 ```
 
 From source:
