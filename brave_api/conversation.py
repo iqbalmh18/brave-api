@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from io import BytesIO
@@ -8,11 +9,16 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
+from ._internal.constants import (
+    IMAGE_MAX_DIMENSION,
+    IMAGE_QUALITY,
+    THUMBNAIL_MAX_DIMENSION,
+    THUMBNAIL_QUALITY,
+)
+from ._internal.models import StreamEvent
 from ._internal.types import (
     QueryType,
-    StreamEvent,
     StreamEventType,
-    StreamResult,
 )
 from ._streaming.parser import iter_events
 from ._streaming.result import StreamAccumulator
@@ -24,26 +30,37 @@ from .exceptions import (
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from ._internal.models import ConversationResponse
+    from ._internal.models import ConversationResponse, StreamResult
     from .client import BraveClient
 
 logger = logging.getLogger("brave_api.conversation")
 
-STOPWORDS_EN = set(
-    json.loads(
-        Path(__file__).parent.joinpath("_data/stopwords-en.json").read_text(
-            encoding="utf-8"
-        )
-    )
-)
+_STOPWORDS_EN: frozenset[str] | None = None
+_STOPWORDS_ID: frozenset[str] | None = None
 
-STOPWORDS_ID = set(
-    json.loads(
-        Path(__file__).parent.joinpath("_data/stopwords-id.json").read_text(
-            encoding="utf-8"
+
+def _get_stopwords_en() -> frozenset[str]:
+    global _STOPWORDS_EN
+    if _STOPWORDS_EN is None:
+        data = json.loads(
+            Path(__file__).parent.joinpath("_data/stopwords-en.json").read_text(
+                encoding="utf-8"
+            )
         )
-    )
-)
+        _STOPWORDS_EN = frozenset(data)
+    return _STOPWORDS_EN
+
+
+def _get_stopwords_id() -> frozenset[str]:
+    global _STOPWORDS_ID
+    if _STOPWORDS_ID is None:
+        data = json.loads(
+            Path(__file__).parent.joinpath("_data/stopwords-id.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        _STOPWORDS_ID = frozenset(data)
+    return _STOPWORDS_ID
 
 
 def _detect_query_language(query: str) -> tuple[str, str]:
@@ -56,14 +73,17 @@ def _detect_query_language(query: str) -> tuple[str, str]:
     if not tokens:
         return "en", "en-us"
 
+    stopwords_en = _get_stopwords_en()
+    stopwords_id = _get_stopwords_id()
+
     id_score = 0
     en_score = 0
 
     for token in tokens:
-        if token in STOPWORDS_ID:
+        if token in stopwords_id:
             id_score += 1
 
-        if token in STOPWORDS_EN:
+        if token in stopwords_en:
             en_score += 1
 
     if id_score > en_score:
@@ -71,7 +91,7 @@ def _detect_query_language(query: str) -> tuple[str, str]:
     return "en", "en-us"
 
 
-def _to_jpeg(image_bytes: bytes, max_dimension: int, quality: int) -> bytes | None:
+def _convert_to_jpeg_sync(image_bytes: bytes, max_dimension: int, quality: int) -> bytes | None:
     try:
         with Image.open(BytesIO(image_bytes)) as img:
             img = img.convert("RGB")
@@ -90,6 +110,10 @@ def _to_jpeg(image_bytes: bytes, max_dimension: int, quality: int) -> bytes | No
     except Exception as e:
         logger.warning("Failed to convert image to JPEG: %s", e)
         return None
+
+
+async def _to_jpeg(image_bytes: bytes, max_dimension: int, quality: int) -> bytes | None:
+    return await asyncio.to_thread(_convert_to_jpeg_sync, image_bytes, max_dimension, quality)
 
 
 class Conversation:
@@ -114,14 +138,14 @@ class Conversation:
         client: BraveClient,
         query: str,
         *,
-        query_type: str = QueryType.REGULAR,
+        query_type: QueryType = QueryType.REGULAR,
         quote: str | None = None,
         context: str | None = None,
         auto_tools: bool = True,
     ) -> None:
         self._client: BraveClient = client
         self._query: str = query
-        self._query_type: str = query_type
+        self._query_type: QueryType = query_type
         self._quote: str | None = quote
         self._context: str | None = context
         self._auto_tools: bool = auto_tools
@@ -161,7 +185,7 @@ class Conversation:
     def has_image(self) -> bool:
         return self._image is not None
 
-    def attach_image(
+    async def attach_image(
         self,
         image: bytes | str | Path,
         *,
@@ -182,14 +206,14 @@ class Conversation:
         else:
             data = image
         
-        jpeg_data = _to_jpeg(data, max_dimension=1000, quality=92)
+        jpeg_data = await _to_jpeg(data, max_dimension=IMAGE_MAX_DIMENSION, quality=IMAGE_QUALITY)
         if jpeg_data is None:
             jpeg_data = data
-        self._image = (jpeg_data, "image.jpg", "image/jpeg")
+        self._image = (jpeg_data, "image.jpg", "image/jpeg")  # type: ignore[assignment]
 
-        thumb_data = _to_jpeg(data, max_dimension=256, quality=85)
+        thumb_data = await _to_jpeg(data, max_dimension=THUMBNAIL_MAX_DIMENSION, quality=THUMBNAIL_QUALITY)
         if thumb_data:
-            self._thumbnail = (thumb_data, "thumbnail.jpg", "image/jpeg")
+            self._thumbnail = (thumb_data, "thumbnail.jpg", "image/jpeg")  # type: ignore[assignment]
 
     def set_language(self, language: str, ui_lang: str | None = None) -> None:
         self._language_override = (language, ui_lang or f"{language}-{language}")
@@ -216,6 +240,8 @@ class Conversation:
         self._symmetric_key = None
         self._bo_share_link = None
         self._bo_open_modal = None
+        self._image = None
+        self._thumbnail = None
 
     async def __aenter__(self) -> Conversation:
         await self.open()
@@ -242,7 +268,7 @@ class Conversation:
                 tool_use = self._extract_tool_use(event)
                 if self._auto_tools and tool_use is not None:
                     try:
-                        enrichment = await self._client.run_tool(
+                        enrichment = await self._client._run_tool(
                             tool_use,
                             self._symmetric_key,
                         )
@@ -265,7 +291,7 @@ class Conversation:
         ui_lang: str,
     ):
         if self._image is None:
-            return self._client.stream_raw(
+            return self._client._stream_raw(
                 conversation_id=self._id,  # type: ignore[arg-type]
                 query=self._query,
                 symmetric_key=self._symmetric_key,  # type: ignore[arg-type]
@@ -280,7 +306,7 @@ class Conversation:
         thumb_bytes, thumb_filename, thumb_mime = (
             self._thumbnail if self._thumbnail else (None, "thumbnail.jpg", "image/jpeg")
         )
-        return self._client.stream_raw_multimodal(
+        return self._client._stream_raw_multimodal(
             conversation_id=self._id,  # type: ignore[arg-type]
             query=self._query,
             symmetric_key=self._symmetric_key,  # type: ignore[arg-type]

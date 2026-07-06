@@ -11,6 +11,8 @@ from ._internal.models import (
     SearchResult,
     SearchWebResult,
     SignedParams,
+    StreamEvent,
+    StreamResult,
     SuggestItem,
     TokenModel,
     ToolUseEvent,
@@ -18,15 +20,10 @@ from ._internal.models import (
     WebResult,
 )
 from ._internal.types import (
-    ConversationResponseDict,
     QueryType,
-    StreamEvent,
     StreamEventType,
-    StreamResult,
     StreamState,
-    TokenDict,
     ToolName,
-    ToolUseEventDict,
 )
 from ._streaming.parser import iter_events, parse_line
 from .client import BraveClient
@@ -51,7 +48,6 @@ __all__ = [
     "Conversation",
     "ConversationError",
     "ConversationResponse",
-    "ConversationResponseDict",
     "HTTPStatusError",
     "ImageResult",
     "Infobox",
@@ -67,12 +63,10 @@ __all__ = [
     "StreamResult",
     "StreamState",
     "SuggestItem",
-    "TokenDict",
     "TokenExtractionError",
     "TokenModel",
     "ToolName",
     "ToolUseEvent",
-    "ToolUseEventDict",
     "TransportError",
     "VideoResult",
     "WebResult",

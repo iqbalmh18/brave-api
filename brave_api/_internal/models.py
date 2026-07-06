@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from .types import StreamEventType, StreamState
+
 
 class TokenModel(BaseModel):
     q: str = Field(description="Query string yang di-hash")
@@ -133,6 +135,91 @@ class SearchResult(BaseModel):
         return [r.url for r in self.web]
 
 
+class StreamEvent(BaseModel):
+    type: StreamEventType = Field(description="Tipe event yang sudah di-parse")
+    raw_type: str = Field(description="Tipe event asli dari server")
+    payload: dict[str, Any] = Field(default_factory=dict, description="Payload JSON lengkap dari server")
+
+    model_config = {"frozen": True}
+
+    @property
+    def delta(self) -> str:
+        return str(self.payload.get("delta", ""))
+
+    @property
+    def text(self) -> str:
+        return str(self.payload.get("text", ""))
+
+    @property
+    def tool_id(self) -> str | None:
+        return self.payload.get("id")
+
+    @property
+    def tool_name(self) -> str | None:
+        return self.payload.get("name")
+
+    @property
+    def tool_arguments(self) -> dict[str, Any]:
+        return dict(self.payload.get("arguments", {}))
+
+    @property
+    def error_message(self) -> str | None:
+        if self.type is StreamEventType.ERROR:
+            msg = (
+                self.payload.get("message")
+                or self.payload.get("error")
+                or self.payload.get("detail")
+                or self.payload.get("reason")
+                or self.payload.get("description")
+            )
+            if msg:
+                return str(msg)
+            return repr(self.payload)
+        return None
+
+
+class StreamResult(BaseModel):
+    text: str = Field(default="", description="Text respons lengkap dari AI")
+    thinking: str = Field(default="", description="Proses thinking model jika ada")
+    urls: list[str] = Field(default_factory=list, description="URL web yang relevan")
+    images: list[ImageResult] = Field(default_factory=list, description="Gambar yang relevan dengan metadata")
+    videos: list[VideoResult] = Field(default_factory=list, description="Video yang relevan dengan metadata")
+    web_results: list[WebResult] = Field(default_factory=list, description="Hasil pencarian web dengan metadata")
+    infobox: Infobox | None = Field(default=None, description="Entity card (panel Wikipedia/knowledge) jika ada")
+    followups: list[str] = Field(default_factory=list, description="Saran pertanyaan lanjutan dari server")
+    citations: list[dict[str, Any]] = Field(default_factory=list, description="Sitasi dari sumber")
+    inline_entities: list[dict[str, Any]] = Field(default_factory=list, description="Entitas inline dari respons")
+    inline_citations: list[dict[str, Any]] = Field(default_factory=list, description="Inline citations dari respons")
+    rag_content: list[dict[str, Any]] = Field(default_factory=list, description="RAG content dari respons")
+    table_of_contents: list[dict[str, Any]] = Field(default_factory=list, description="Table of contents")
+    usage: dict[str, Any] = Field(default_factory=dict, description="Usage statistics")
+    tool_uses: list[dict[str, Any]] = Field(default_factory=list, description="Tool yang digunakan selama percakapan")
+    raw_events: list[StreamEvent] = Field(default_factory=list, exclude=True, description="Semua event mentah untuk debugging")
+    state: StreamState = Field(default=StreamState.INACTIVE, description="Status stream terakhir")
+
+    model_config = {"frozen": True}
+
+    @property
+    def is_complete(self) -> bool:
+        return self.state is StreamState.COMPLETE
+
+    @property
+    def has_tool_calls(self) -> bool:
+        return bool(self.tool_uses)
+
+    @property
+    def has_images(self) -> bool:
+        return bool(self.images)
+
+    @property
+    def has_videos(self) -> bool:
+        return bool(self.videos)
+
+    @property
+    def has_infobox(self) -> bool:
+        return self.infobox is not None
+
+
 __all__ = [
     "ConversationResponse",
     "ImageResult",
@@ -141,6 +228,8 @@ __all__ = [
     "SearchResult",
     "SearchWebResult",
     "SignedParams",
+    "StreamEvent",
+    "StreamResult",
     "SuggestItem",
     "TokenModel",
     "ToolUseEvent",

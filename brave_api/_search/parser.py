@@ -49,6 +49,7 @@ _RESULT_SNIPPET = re.compile(
 )
 
 _CITE_URL = re.compile(r'<cite[^>]*>(.*?)</cite>', re.DOTALL)
+_NEWS_ARTICLE = re.compile(r'<div[^>]+class="[^"]*\bnews-article\b[^"]*"[^>]*>')
 
 
 def _strip_tags(html: str) -> str:
@@ -150,7 +151,7 @@ def _parse_web_results_from_html(html: str) -> list[SearchWebResult]:
                 )
             )
         except Exception as exc:
-            logger.debug("Failed to create SearchWebResult for %s: %s", url, exc)
+            logger.warning("Failed to create SearchWebResult for %s: %s", url, exc)
 
     return results
 
@@ -159,8 +160,7 @@ def _parse_news_results_from_html(html: str) -> list[SearchNewsResult]:
     results: list[SearchNewsResult] = []
     seen_urls: set[str] = set()
 
-    news_pat = re.compile(r'<div[^>]+class="[^"]*\bnews-article\b[^"]*"[^>]*>')
-    blocks = _split_into_blocks(html, news_pat)
+    blocks = _split_into_blocks(html, _NEWS_ARTICLE)
 
     for block in blocks:
         url = _extract_href(block)
@@ -192,7 +192,7 @@ def _parse_news_results_from_html(html: str) -> list[SearchNewsResult]:
                 )
             )
         except Exception as exc:
-            logger.debug("Failed to create SearchNewsResult for %s: %s", url, exc)
+            logger.warning("Failed to create SearchNewsResult for %s: %s", url, exc)
 
     return results
 

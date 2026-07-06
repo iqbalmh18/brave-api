@@ -383,26 +383,27 @@ Retry strategy: HTTP 429 and 5xx responses are retried with exponential backoff 
 
 ```
 brave_api/
-├── __init__.py          # All public exports
-├── client.py            # BraveClient - main facade
-├── conversation.py      # Conversation - single conversation turn
-├── exceptions.py        # Exception hierarchy
-├── _crypto/
-│   └── keys.py          # AES-256 symmetric key generation
-├── _internal/
-│   ├── config.py        # ClientConfig (Pydantic, frozen)
-│   ├── constants.py     # Global constants
-│   ├── models.py         # Data models (ImageResult, WebResult, etc.)
-│   └── types.py          # Enums, StreamEvent, StreamResult, Protocol
-├── _search/
-│   └── parser.py         # HTML parser for search() and suggest()
-├── _streaming/
-│   ├── parser.py          # SSE line -> StreamEvent
-│   └── result.py          # StreamAccumulator
-└── _transport/
-    ├── http.py            # HTTPClient (curl_cffi wrapper)
-    ├── retry.py           # Exponential backoff retry
-    └── sveltekit.py        # SvelteKit SSR token parser
+├── __init__.py                 # All public exports
+├── client.py                   # BraveClient - main facade
+├── conversation.py             # Conversation - single conversation turn
+├── _crypto
+│   └── keys.py                 # AES-256 symmetric key generation
+├── exceptions.py               # Exception hierarchy
+├── _internal
+│   ├── config.py               # ClientConfig (Pydantic, frozen)
+│   ├── constants.py            # Global constants
+│   ├── models.py               # Data models (ImageResult, WebResult, etc.)
+│   ├── token_extractor.py      # SSR token extractor
+│   └── types.py                # Enums, Protocol
+├── py.typed
+├── _search
+│   └── parser.py               # HTML parser for search() and suggest()
+├── _streaming
+│   ├── parser.py               # SSE line -> StreamEvent
+│   └── result.py               # StreamAccumulator
+└── _transport
+    ├── http.py                 # HTTPClient (curl_cffi wrapper)
+    └── retry.py                # Exponential backoff retry
 ```
 
 ---

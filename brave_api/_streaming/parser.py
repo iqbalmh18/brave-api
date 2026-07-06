@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import TYPE_CHECKING, Any, TypeGuard
+
+from .._internal.constants import STREAM_DONE_MARKER
+from .._internal.models import StreamEvent
+from .._internal.types import StreamEventType, SupportsRawStream
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-from .._internal.constants import STREAM_DONE_MARKER
-from .._internal.types import StreamEvent, StreamEventType, SupportsRawStream
+logger = logging.getLogger("brave_api.stream.parser")
 
 
 def parse_line(raw_line: str) -> StreamEvent | None:
@@ -25,7 +29,8 @@ def parse_line(raw_line: str) -> StreamEvent | None:
 
     try:
         payload: dict[str, Any] = json.loads(line)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        logger.warning("Failed to parse stream line: %s", e)
         return None
     if not isinstance(payload, dict):
         return None
@@ -35,8 +40,6 @@ def parse_line(raw_line: str) -> StreamEvent | None:
         try:
             event_type = StreamEventType(raw_type)
         except ValueError:
-            # Unknown event type from server — skip silently rather than
-            # misclassifying as an error and aborting the stream.
             return None
     else:
         event_type = StreamEventType.ERROR

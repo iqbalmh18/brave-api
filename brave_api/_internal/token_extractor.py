@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .._internal.types import TokenDict
+from .models import TokenModel
 from ..exceptions import TokenExtractionError
 
 
@@ -30,7 +30,7 @@ def decode_pool(pool: list[Any]) -> Any:
     return expand(pool[0])
 
 
-def find_token(payload: dict[str, Any]) -> TokenDict:
+def find_token(payload: dict[str, Any]) -> TokenModel:
     nodes = payload.get("nodes") or []
     for node in nodes:
         if node.get("type") != "data":
@@ -55,7 +55,7 @@ def find_token(payload: dict[str, Any]) -> TokenDict:
             and nonce_value
             and sig_value
         ):
-            return TokenDict(q=q_value, nonce=nonce_value, sig=sig_value)
+            return TokenModel(q=q_value, nonce=nonce_value, sig=sig_value)
 
     raise TokenExtractionError(
         "Block `token = {q, nonce, sig}` not found in payload __data.json"

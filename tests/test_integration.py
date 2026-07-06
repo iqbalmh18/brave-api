@@ -1,8 +1,8 @@
-"""Tes integrasi brave_tap (memanggil API Brave langsung).
+"""Tes integrasi brave_api (memanggil API Brave langsung).
 
 Jalankan hanya bila ingin validasi end-to-end::
 
-    uv run pytest brave_tap/tests/test_integration.py -m integration
+    uv run pytest brave_api/tests/test_integration.py -m integration
 """
 
 from __future__ import annotations
@@ -13,8 +13,8 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 
-from brave_tap import (
-    BraveTapClient,
+from brave_api import (
+    BraveClient,
     ClientConfig,
     Conversation,
     QueryType,
@@ -25,12 +25,12 @@ pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncIterator[BraveTapClient]:
+async def client() -> AsyncIterator[BraveClient]:
     config = ClientConfig(
         geoloc=os.environ.get("BRAVE_GEOLOC", "0x0"),
         country=os.environ.get("BRAVE_COUNTRY", "us"),
     )
-    instance = BraveTapClient(config)
+    instance = BraveClient(config)
     await instance.__aenter__()
     try:
         yield instance
@@ -38,7 +38,7 @@ async def client() -> AsyncIterator[BraveTapClient]:
         await instance.__aexit__(None, None, None)
 
 
-async def test_open_conversation_returns_id(client: BraveTapClient) -> None:
+async def test_open_conversation_returns_id(client: BraveClient) -> None:
     conv: Conversation = await client.conversation("ping")
     assert conv.id is not None
     assert len(conv.id) > 20
@@ -49,7 +49,7 @@ async def test_open_conversation_returns_id(client: BraveTapClient) -> None:
     await conv.close()
 
 
-async def test_collect_simple_answer(client: BraveTapClient) -> None:
+async def test_collect_simple_answer(client: BraveClient) -> None:
     conv = await client.conversation("who is iqbalmh18")
     result = await conv.collect()
     assert result.is_complete
@@ -57,7 +57,7 @@ async def test_collect_simple_answer(client: BraveTapClient) -> None:
     await conv.close()
 
 
-async def test_stream_yields_text_deltas(client: BraveTapClient) -> None:
+async def test_stream_yields_text_deltas(client: BraveClient) -> None:
     conv = await client.conversation("who is iqbalmh18")
     chunks: list[str] = []
     async for evt in conv.stream_events():
@@ -67,7 +67,7 @@ async def test_stream_yields_text_deltas(client: BraveTapClient) -> None:
     await conv.close()
 
 
-async def test_contextual_search_does_not_crash(client: BraveTapClient) -> None:
+async def test_contextual_search_does_not_crash(client: BraveClient) -> None:
     conv = await client.conversation(
         "ringkasan",
         query_type=QueryType.CONTEXTUAL_SEARCH,

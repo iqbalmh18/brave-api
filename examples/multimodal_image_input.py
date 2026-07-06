@@ -31,7 +31,7 @@ async def main() -> None:
         # Method 2: attach_image() from a Path — MIME is inferred from extension
         print("\n=== Method 2: conv.attach_image(Path) ===")
         conv2 = await client.conversation("describe this image in detail")
-        conv2.attach_image(SAMPLE_IMAGE)
+        await conv2.attach_image(SAMPLE_IMAGE)
         result2 = await conv2.collect()
         print(result2.text[:400])
 
@@ -39,7 +39,7 @@ async def main() -> None:
         print("\n=== Method 3: conv.attach_image(bytes) ===")
         image_bytes = SAMPLE_IMAGE.read_bytes()
         conv3 = await client.conversation("apakah ada teks dalam gambar ini?")
-        conv3.attach_image(image_bytes, filename="foto.png", mime="image/png")
+        await conv3.attach_image(image_bytes, filename="foto.png", mime="image/png")
         result3 = await conv3.collect()
         print(result3.text[:400])
 

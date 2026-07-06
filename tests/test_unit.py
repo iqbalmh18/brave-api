@@ -1,20 +1,20 @@
-"""Unit test brave_tap (tanpa jaringan)."""
+"""Unit test brave_api (tanpa jaringan)."""
 
 from __future__ import annotations
 
 import pytest
 
-from brave_tap import (
-    BraveTapError,
+from brave_api import (
+    BraveAPIError,
     StreamEventType,
     generate_symmetric_key,
     is_valid_symmetric_key,
 )
-from brave_tap._internal.config import ClientConfig
-from brave_tap._internal.types import TokenDict
-from brave_tap._streaming.parser import is_terminal_event, parse_line
-from brave_tap._transport.sveltekit import decode_pool, find_token
-from brave_tap.exceptions import (
+from brave_api._internal.config import ClientConfig
+from brave_api._internal.models import TokenModel
+from brave_api._streaming.parser import is_terminal_event, parse_line
+from brave_api._internal.token_extractor import decode_pool, find_token
+from brave_api.exceptions import (
     ChallengeRequiredError,
     ConversationError,
     HTTPStatusError,
@@ -84,7 +84,7 @@ class TestFindToken:
 
     def test_finds_valid_token(self) -> None:
         payload = self._payload({"q": "x", "nonce": "n", "sig": "s"})
-        assert find_token(payload) == TokenDict(q="x", nonce="n", sig="s")
+        assert find_token(payload) == TokenModel(q="x", nonce="n", sig="s")
 
     def test_missing_token_raises(self) -> None:
         with pytest.raises(TokenExtractionError):
@@ -104,7 +104,7 @@ class TestFindToken:
                 },
             ],
         }
-        assert find_token(payload) == TokenDict(q="a", nonce="b", sig="c")
+        assert find_token(payload) == TokenModel(q="a", nonce="b", sig="c")
 
 
 class TestParseLine:
@@ -128,11 +128,9 @@ class TestParseLine:
         assert parse_line("not json") is None
         assert parse_line("[1, 2, 3]") is None
 
-    def test_unknown_type_falls_back_to_error(self) -> None:
+    def test_unknown_type_returns_none(self) -> None:
         event = parse_line('{"type": "future_event", "foo": 1}')
-        assert event is not None
-        assert event.raw_type == "future_event"
-        assert event.type is StreamEventType.ERROR
+        assert event is None
 
     def test_is_terminal_event(self) -> None:
         terminal = parse_line('{"type": "text_stop"}')
@@ -174,7 +172,7 @@ class TestExceptions:
             InvalidResponseError,
         ):
             err = cls("test")
-            assert isinstance(err, BraveTapError)
+            assert isinstance(err, BraveAPIError)
 
     def test_http_status_error_requires_status_code(self) -> None:
         err = HTTPStatusError("boom", status_code=400, response_text="<html>")

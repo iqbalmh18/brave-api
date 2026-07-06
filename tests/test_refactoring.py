@@ -4,8 +4,10 @@ Script ini melakukan pengujian dasar untuk memastikan semua perubahan
 refactoring berfungsi dengan baik tanpa memerlukan API call sebenarnya.
 """
 
-from brave_tap import (
-    BraveTapClient,
+import pytest
+
+from brave_api import (
+    BraveClient,
     ClientConfig,
     ImageResult,
     ConversationResponse,
@@ -18,24 +20,22 @@ from brave_tap import (
 
 def test_imports():
     """Test bahwa semua model baru bisa diimport."""
-    print("🧪 Test 1: Imports")
-    print("  ✅ BraveTapClient")
-    print("  ✅ ClientConfig")
-    print("  ✅ ImageResult")
-    print("  ✅ VideoResult")
-    print("  ✅ WebResult")
-    print("  ✅ TokenModel")
-    print("  ✅ ConversationResponse")
-    print("  ✅ StreamResult")
+    assert BraveClient is not None
+    assert ClientConfig is not None
+    assert ImageResult is not None
+    assert VideoResult is not None
+    assert WebResult is not None
+    assert TokenModel is not None
+    assert ConversationResponse is not None
+    assert StreamResult is not None
 
 
 def test_client_config():
     """Test ClientConfig dengan Pydantic."""
-    print("\n🧪 Test 2: ClientConfig (Pydantic)")
-    
     # Default config
     config1 = ClientConfig()
-    print(f"  ✅ Default config: language={config1.language}, country={config1.country}")
+    assert config1.language == "en"
+    assert config1.country == "us"
     
     # Custom config
     config2 = ClientConfig(
@@ -45,30 +45,24 @@ def test_client_config():
         request_timeout_seconds=90.0,
         enable_research=True,
     )
-    print(f"  ✅ Custom config: language={config2.language}, retries={config2.max_retries}")
+    assert config2.language == "id"
+    assert config2.max_retries == 5
     
     # Test immutability
-    try:
+    with pytest.raises(Exception):
         config2.language = "en"  # type: ignore
-        print("  ❌ Config tidak frozen!")
-    except Exception:
-        print("  ✅ Config frozen (immutable)")
     
     # Test validation
-    try:
-        bad_config = ClientConfig(max_retries=-1)
-        print("  ❌ Validation tidak berfungsi!")
-    except Exception as e:
-        print(f"  ✅ Validation bekerja: {type(e).__name__}")
+    with pytest.raises(Exception):
+        ClientConfig(max_retries=-1)
 
 
 def test_pydantic_models():
     """Test Pydantic models baru."""
-    print("\n🧪 Test 3: Pydantic Models")
-    
     # TokenModel
     token = TokenModel(q="test", nonce="abc123", sig="def456")
-    print(f"  ✅ TokenModel: q={token.q}, nonce={token.nonce}")
+    assert token.q == "test"
+    assert token.nonce == "abc123"
     
     # ConversationResponse
     conv_resp = ConversationResponse(
@@ -76,7 +70,7 @@ def test_pydantic_models():
         symmetric_key="key123",
         bo_callback_share_link="https://share.link",
     )
-    print(f"  ✅ ConversationResponse: id={conv_resp.id}")
+    assert conv_resp.id == "conv123"
     
     # ImageResult
     img = ImageResult(
@@ -87,7 +81,7 @@ def test_pydantic_models():
         height=600,
         source="example.com",
     )
-    print(f"  ✅ ImageResult: {img.title} ({img.width}x{img.height})")
+    assert img.width == 800
     
     # VideoResult
     video = VideoResult(
@@ -96,7 +90,7 @@ def test_pydantic_models():
         channel="Test Channel",
         duration="5:30",
     )
-    print(f"  ✅ VideoResult: {video.title} by {video.channel}")
+    assert video.title == "Test Video"
     
     # WebResult
     web = WebResult(
@@ -104,14 +98,11 @@ def test_pydantic_models():
         title="Example Site",
         description="An example website",
     )
-    print(f"  ✅ WebResult: {web.title}")
+    assert web.title == "Example Site"
 
 
 def test_stream_result():
     """Test StreamResult dengan rich data."""
-    print("\n🧪 Test 4: StreamResult dengan Rich Data")
-    
-    # Buat mock images dan videos
     images = [
         ImageResult(
             url=f"https://example.com/img{i}.jpg",
@@ -131,74 +122,28 @@ def test_stream_result():
         for i in range(2)
     ]
     
-    # Buat StreamResult
     result = StreamResult(
         text="This is a test response",
         urls=["https://example.com", "https://test.com"],
         images=images,
         videos=videos,
-        state="complete",
+        state="complete", # type: ignore
     )
     
-    print(f"  ✅ Text: {result.text[:30]}...")
-    print(f"  ✅ URLs: {len(result.urls)} URLs")
-    print(f"  ✅ Images: {len(result.images)} images")
-    print(f"  ✅ Videos: {len(result.videos)} videos")
-    print(f"  ✅ has_images: {result.has_images}")
-    print(f"  ✅ has_videos: {result.has_videos}")
-    print(f"  ✅ is_complete: {result.is_complete}")
+    assert len(result.urls) == 2
+    assert len(result.images) == 3
+    assert len(result.videos) == 2
+    assert result.has_images is True
+    assert result.has_videos is True
+    assert result.is_complete is True
 
 
 def test_url_validation():
     """Test validasi URL pada ImageResult."""
-    print("\n🧪 Test 5: URL Validation")
-    
     # Valid URL
-    try:
-        img = ImageResult(url="https://example.com/image.jpg", title="Valid")
-        print(f"  ✅ Valid URL accepted: {img.url}")
-    except Exception as e:
-        print(f"  ❌ Valid URL rejected: {e}")
+    img = ImageResult(url="https://example.com/image.jpg", title="Valid")
+    assert img.url == "https://example.com/image.jpg"
     
     # Invalid URL
-    try:
-        bad_img = ImageResult(url="not-a-url", title="Invalid")
-        print(f"  ❌ Invalid URL accepted: {bad_img.url}")
-    except Exception as e:
-        print(f"  ✅ Invalid URL rejected: {type(e).__name__}")
-
-
-def main():
-    """Jalankan semua tests."""
-    print("=" * 60)
-    print("🚀 BRAVE TAP - REFACTORING VALIDATION TESTS")
-    print("=" * 60)
-    
-    try:
-        test_imports()
-        test_client_config()
-        test_pydantic_models()
-        test_stream_result()
-        test_url_validation()
-        
-        print("\n" + "=" * 60)
-        print("✅ SEMUA TESTS PASSED!")
-        print("=" * 60)
-        print("\n📝 Summary:")
-        print("  • Pydantic models: ✅ Working")
-        print("  • Type safety: ✅ Validated")
-        print("  • Immutability: ✅ Enforced")
-        print("  • URL validation: ✅ Working")
-        print("  • Rich results: ✅ Supported")
-        print("\n🎉 Refactoring berhasil!")
-        
-    except Exception as e:
-        print("\n" + "=" * 60)
-        print(f"❌ TEST FAILED: {e}")
-        print("=" * 60)
-        import traceback
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    main()
+    with pytest.raises(Exception):
+        ImageResult(url="not-a-url", title="Invalid")

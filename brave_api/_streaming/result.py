@@ -1,24 +1,34 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-from .._internal.models import ImageResult, Infobox, VideoResult, WebResult
-from .._internal.types import (
+from .._internal.models import (
+    ImageResult,
+    Infobox,
     StreamEvent,
-    StreamEventType,
     StreamResult,
-    StreamState,
+    VideoResult,
+    WebResult,
 )
+from .._internal.types import StreamEventType, StreamState
+
+logger = logging.getLogger("brave_api.result")
 
 
 class StreamAccumulator:
-    def __init__(self) -> None:
+    def __init__(self, store_raw_events: bool = True) -> None:
         self._text_parts: list[str] = []
         self._thinking_parts: list[str] = []
         self._tool_uses: list[dict[str, Any]] = []
         self._citations: list[dict[str, Any]] = []
         self._inline_entities: list[dict[str, Any]] = []
+        self._inline_citations: list[dict[str, Any]] = []
+        self._rag_content: list[dict[str, Any]] = []
+        self._table_of_contents: list[dict[str, Any]] = []
+        self._usage: dict[str, Any] = {}
         self._raw_events: list[StreamEvent] = []
+        self._store_raw_events = store_raw_events
         self._urls: list[str] = []
         self._images: list[ImageResult] = []
         self._videos: list[VideoResult] = []
@@ -35,7 +45,8 @@ class StreamAccumulator:
         return self._state
 
     def feed(self, event: StreamEvent) -> None:
-        self._raw_events.append(event)
+        if self._store_raw_events:
+            self._raw_events.append(event)
         self._state = StreamState.STREAMING
         event_type = event.type
 
@@ -86,6 +97,16 @@ class StreamAccumulator:
                 self._extract_from_service_response(service)
             else:
                 self._extract_web_from_results(event.payload.get("results", []))
+        elif event_type is StreamEventType.RAG:
+            self._extract_rag(event.payload)
+        elif event_type is StreamEventType.TABLE_OF_CONTENT:
+            self._extract_toc(event.payload)
+        elif event_type is StreamEventType.USAGE:
+            self._extract_usage(event.payload)
+        elif event_type is StreamEventType.INLINE_CITATION:
+            self._inline_citations.append(event.payload)
+        elif event_type is StreamEventType.AUGMENT_WITH_INLINE_CITATION:
+            self._inline_citations.append(event.payload)
 
     def _add_url(self, url: str) -> None:
         if url and isinstance(url, str) and url not in self._seen_urls:
@@ -156,8 +177,8 @@ class StreamAccumulator:
                     thumbnail_original=thumbnail_original,
                 )
                 self._web_results.append(web_result)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to create WebResult for %s: %s", url, e)
 
             img_url = thumbnail_original or thumbnail_url
             if img_url and img_url not in self._seen_image_urls:
@@ -170,8 +191,8 @@ class StreamAccumulator:
                         source=result.get("url"),
                     )
                     self._images.append(image)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to create ImageResult for %s: %s", img_url, e)
 
     def _extract_images_from_results(self, results: list[Any]) -> None:
         for result in results:
@@ -207,8 +228,8 @@ class StreamAccumulator:
                     )
                     self._images.append(image)
                     self._add_url(url)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to create ImageResult for %s: %s", url, e)
 
     def _extract_videos_from_results(self, results: list[Any]) -> None:
         for result in results:
@@ -235,32 +256,19 @@ class StreamAccumulator:
                 )
                 self._videos.append(video)
                 self._add_url(url)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to create VideoResult for %s: %s", url, e)
 
-    def _extract_infobox_from_service_response(self, sr: dict[str, Any]) -> None:
-        """Ekstrak infobox dari service_response di augment_with_tool_use."""
-        # Cek field 'infobox' di dalam SR
-        infobox_data = sr.get("infobox")
+    def _build_infobox(self, infobox_data: dict[str, Any]) -> Infobox | None:
+        title = infobox_data.get("title") or infobox_data.get("name") or infobox_data.get("full_title") or infobox_data.get("label")
+        subtitle = infobox_data.get("subtitle") or infobox_data.get("description") or infobox_data.get("subtype") or infobox_data.get("type")
 
-        # Juga bisa ada sebagai entity langsung di top-level SR
-        # (ketika SR adalah entity result, bukan search result)
-        if not infobox_data and "title" in sr and "description" in sr and "type" in sr:
-            infobox_data = sr
-
-        if not isinstance(infobox_data, dict):
-            return
-
-        title = infobox_data.get("title") or infobox_data.get("name") or infobox_data.get("full_title")
-        subtitle = infobox_data.get("description") or infobox_data.get("subtype") or infobox_data.get("label")
-
-        # Gambar: cek field 'thumbnail' atau 'images'
         image_url: str | None = None
-        thumb = infobox_data.get("thumbnail")
-        if isinstance(thumb, dict):
-            image_url = thumb.get("src") or thumb.get("original") or thumb.get("resized")
-        elif isinstance(thumb, str) and thumb.startswith(("http://", "https://")):
-            image_url = thumb
+        img_raw = infobox_data.get("image") or infobox_data.get("thumbnail") or infobox_data.get("image_url")
+        if isinstance(img_raw, dict):
+            image_url = img_raw.get("src") or img_raw.get("original") or img_raw.get("resized") or img_raw.get("url")
+        elif isinstance(img_raw, str) and img_raw.startswith(("http://", "https://")):
+            image_url = img_raw
         if not image_url:
             images = infobox_data.get("images", [])
             if isinstance(images, list) and images:
@@ -268,9 +276,8 @@ class StreamAccumulator:
                 if isinstance(first, dict):
                     image_url = first.get("original") or first.get("src") or first.get("resized")
 
-        # URL: cek 'url', 'website_url', atau 'profiles'
         url: str | None = None
-        url_raw = infobox_data.get("url") or infobox_data.get("website_url")
+        url_raw = infobox_data.get("url") or infobox_data.get("website_url") or infobox_data.get("website")
         if isinstance(url_raw, str) and url_raw.startswith(("http://", "https://")):
             url = url_raw
         if not url:
@@ -285,89 +292,69 @@ class StreamAccumulator:
                         elif not url:
                             url = p_url or None
 
-        # Kumpulkan atribut: long_desc, attributes, ratings, dll.
-        skip = {"title", "full_title", "name", "description", "subtype", "label",
-                "thumbnail", "images", "url", "website_url", "profiles", "providers",
-                "is_source_local", "is_source_both", "fetched_content_timestamp",
+        skip = {"title", "full_title", "name", "label", "subtitle", "description", "subtype", "type",
+                "image", "thumbnail", "image_url", "images", "url", "website_url", "website", "profiles", "providers",
+                "infobox", "is_source_local", "is_source_both", "fetched_content_timestamp",
                 "page_age", "page_fetched", "family_friendly", "language",
                 "position", "found_in_urls", "qanda", "actions", "icons",
                 "attributes_shown", "distance", "zoom_level", "location",
-                "coordinates", "type", "category", "is_location"}
+                "coordinates", "category", "is_location"}
+        
         attributes: dict[str, Any] = {}
         long_desc = infobox_data.get("long_desc")
         if long_desc:
             attributes["long_desc"] = long_desc
+            
         raw_attrs = infobox_data.get("attributes", [])
         if isinstance(raw_attrs, list):
             for attr in raw_attrs:
                 if isinstance(attr, list) and len(attr) == 2:
                     attributes[str(attr[0])] = attr[1]
+                    
         for k, v in infobox_data.items():
             if k not in skip and k not in attributes and v is not None:
                 attributes[k] = v
 
         if not title:
-            return
+            return None
 
         try:
-            self._infobox = Infobox(
+            return Infobox(
                 title=str(title),
                 subtitle=str(subtitle) if subtitle else None,
                 image_url=image_url,
                 url=url,
                 attributes=attributes,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to create Infobox for %s: %s", title, e)
+            return None
+
+    def _extract_infobox_from_service_response(self, sr: dict[str, Any]) -> None:
+        """Ekstrak infobox dari service_response di augment_with_tool_use."""
+        infobox_data = sr.get("infobox")
+        if not infobox_data and "title" in sr and "description" in sr and "type" in sr:
+            infobox_data = sr
+
+        if not isinstance(infobox_data, dict):
+            return
+
+        box = self._build_infobox(infobox_data)
+        if box and not self._infobox:
+            self._infobox = box
 
     def _extract_infobox(self, payload: dict[str, Any]) -> None:
         """Parse AUGMENT_WITH_INFOBOX payload menjadi Infobox model."""
         if self._infobox is not None:
-            return  # gunakan infobox pertama saja
-
-        # Payload bisa berupa wrapper dengan 'infobox' key, atau langsung field-nya
+            return
+            
         data: dict[str, Any] = payload.get("infobox") or payload  # type: ignore[assignment]
         if not isinstance(data, dict):
             return
 
-        # Coba berbagai key yang mungkin dipakai server
-        title = (
-            data.get("title")
-            or data.get("name")
-            or data.get("label")
-        )
-        subtitle = (
-            data.get("subtitle")
-            or data.get("description")
-            or data.get("type")
-        )
-        image_url: str | None = None
-        img_raw = data.get("image") or data.get("thumbnail") or data.get("image_url")
-        if isinstance(img_raw, dict):
-            image_url = img_raw.get("src") or img_raw.get("url")
-        elif isinstance(img_raw, str) and img_raw.startswith(("http://", "https://")):
-            image_url = img_raw
-
-        url: str | None = None
-        url_raw = data.get("url") or data.get("website")
-        if isinstance(url_raw, str) and url_raw.startswith(("http://", "https://")):
-            url = url_raw
-
-        # Kumpulkan atribut sisanya
-        skip = {"title", "name", "label", "subtitle", "description", "type",
-                "image", "thumbnail", "image_url", "url", "website", "infobox"}
-        attributes = {k: v for k, v in data.items() if k not in skip and v is not None}
-
-        try:
-            self._infobox = Infobox(
-                title=str(title) if title else None,
-                subtitle=str(subtitle) if subtitle else None,
-                image_url=image_url,
-                url=url,
-                attributes=attributes,
-            )
-        except Exception:
-            pass
+        box = self._build_infobox(data)
+        if box:
+            self._infobox = box
 
     def _extract_followups(self, payload: dict[str, Any]) -> None:
         """Parse FOLLOWUPS payload menjadi list pertanyaan."""
@@ -388,10 +375,23 @@ class StreamAccumulator:
         self._state = StreamState.FAILED
         self._failed = True
 
+    def _extract_rag(self, payload: dict[str, Any]) -> None:
+        content = payload.get("content") or payload.get("rag") or payload.get("results") or []
+        if isinstance(content, list):
+            self._rag_content.extend(content)
+
+    def _extract_toc(self, payload: dict[str, Any]) -> None:
+        items = payload.get("items") or payload.get("toc") or payload.get("headings") or []
+        if isinstance(items, list):
+            self._table_of_contents.extend(items)
+
+    def _extract_usage(self, payload: dict[str, Any]) -> None:
+        self._usage = dict(payload)
+
     def finalize(self) -> StreamResult:
         if not self._failed:
             self._state = StreamState.COMPLETE
-        
+
         return StreamResult(
             text="".join(self._text_parts),
             thinking="".join(self._thinking_parts),
@@ -404,6 +404,10 @@ class StreamAccumulator:
             followups=list(self._followups),
             citations=list(self._citations),
             inline_entities=list(self._inline_entities),
+            inline_citations=list(self._inline_citations),
+            rag_content=list(self._rag_content),
+            table_of_contents=list(self._table_of_contents),
+            usage=self._usage,
             raw_events=list(self._raw_events),
             state=self._state,
         )

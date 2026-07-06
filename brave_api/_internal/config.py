@@ -5,9 +5,12 @@ from pydantic import BaseModel, Field
 from .constants import (
     BASE_URL_DEFAULT,
     COUNTRY_DEFAULT,
+    DEFAULT_MAX_CONCURRENT,
     DEFAULT_MAX_RETRIES,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_RETRY_BACKOFF_SECONDS,
+    DEFAULT_RETRY_JITTER_MAX,
+    DEFAULT_RETRY_JITTER_MIN,
     DEFAULT_STREAM_TIMEOUT_SECONDS,
     GEOLOC_DEFAULT,
     IMPERSONATE_DEFAULT,
@@ -30,9 +33,9 @@ class ClientConfig(BaseModel):
     language: str = Field(default=LANGUAGE_DEFAULT, description="Kode bahasa untuk respons (id/en/dll)")
     ui_lang: str = Field(default=UI_LANG_DEFAULT, description="Bahasa UI (format: id-id, en-us, dll)")
     safesearch: str = Field(default=SAFESEARCH_DEFAULT, description="Level safe search (off/moderate/strict)")
-    force_safesearch: int = Field(default=0, ge=0, le=1, description="Paksa safe search (0=tidak, 1=ya)")
+    force_safesearch: bool = Field(default=False, description="Paksa safe search")
     units_of_measurement: str = Field(default=UNITS_DEFAULT, description="Sistem unit (metric/imperial)")
-    use_location: int = Field(default=1, ge=0, le=1, description="Gunakan lokasi untuk hasil (0=tidak, 1=ya)")
+    use_location: bool = Field(default=True, description="Gunakan lokasi untuk hasil")
     premium_cookie_name: str = Field(default=PREMIUM_COOKIE_NAME_DEFAULT, description="Nama cookie untuk Brave Premium")
     source: str = Field(default=SOURCE_DEFAULT, description="Sumber traffic (home/search/dll)")
     enable_research: bool = Field(default=False, description="Aktifkan mode research untuk pencarian mendalam")
@@ -40,15 +43,15 @@ class ClientConfig(BaseModel):
     stream_timeout_seconds: float | None = Field(default=DEFAULT_STREAM_TIMEOUT_SECONDS, ge=0, description="Timeout untuk koneksi streaming (None = tidak ada batas waktu; 0 = tidak ada batas waktu)")
     max_retries: int = Field(default=DEFAULT_MAX_RETRIES, ge=0, description="Jumlah maksimal retry untuk request yang gagal")
     retry_backoff_seconds: float = Field(default=DEFAULT_RETRY_BACKOFF_SECONDS, gt=0, description="Backoff exponential untuk retry (detik)")
+    retry_jitter_min: float = Field(default=DEFAULT_RETRY_JITTER_MIN, ge=0, description="Multiplier minimum untuk jitter")
+    retry_jitter_max: float = Field(default=DEFAULT_RETRY_JITTER_MAX, ge=0, description="Multiplier maximum untuk jitter")
+    max_concurrent: int = Field(default=DEFAULT_MAX_CONCURRENT, ge=1, description="Jumlah maksimal request concurrent")
     extra_headers: dict[str, str] = Field(default_factory=dict, description="Header HTTP tambahan")
 
     model_config = {"frozen": True, "extra": "forbid"}
 
     def build_referer(self, path_suffix: str = "") -> str:
         return f"{self.base_url}{path_suffix}"
-
-    def build_correlation_id(self, query: str) -> str:
-        return f"{self.impersonate}::{len(query)}::{query[:32]}"
 
 
 __all__ = ["ClientConfig"]

@@ -6,29 +6,25 @@ from .models import (
     ConversationResponse,
     ImageResult,
     SignedParams,
+    StreamEvent,
+    StreamResult,
     TokenModel,
     ToolUseEvent,
     VideoResult,
     WebResult,
 )
 from .types import (
-    ConversationResponseDict,
     QueryType,
-    StreamEvent,
     StreamEventType,
-    StreamResult,
     StreamState,
     SupportsRawStream,
-    TokenDict,
     ToolName,
-    ToolUseEventDict,
 )
 
 __all__ = [
     "VERSION",
     "ClientConfig",
     "ConversationResponse",
-    "ConversationResponseDict",
     "ImageResult",
     "QueryType",
     "SignedParams",
@@ -37,11 +33,9 @@ __all__ = [
     "StreamResult",
     "StreamState",
     "SupportsRawStream",
-    "TokenDict",
     "TokenModel",
     "ToolName",
     "ToolUseEvent",
-    "ToolUseEventDict",
     "VideoResult",
     "WebResult",
 ]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 from .._internal.constants import (
     ACCEPT_LANGUAGE,
-    DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    DEFAULT_MAX_CONCURRENT,
     PRIORITY_HEADER,
     SEC_CH_UA,
     SEC_CH_UA_MOBILE,
@@ -27,9 +28,14 @@ Method = Literal["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
 
 
 class HTTPClient:
-    def __init__(self, config: ClientConfig) -> None:
+    def __init__(self, config: ClientConfig, max_concurrent: int | None = None) -> None:
         self._config: ClientConfig = config
         self._session: AsyncSession[Response] | None = None
+        self._semaphore: asyncio.Semaphore = asyncio.Semaphore(max_concurrent or config.max_concurrent or DEFAULT_MAX_CONCURRENT)
+
+    async def _with_rate_limit(self, operation):
+        async with self._semaphore:
+            return await operation()
 
     async def __aenter__(self) -> HTTPClient:
         await self._open()
@@ -242,10 +248,4 @@ class HTTPClient:
         )
 
 
-def build_default_timeout(config: ClientConfig) -> float:
-    if config.request_timeout_seconds <= 0:
-        return DEFAULT_REQUEST_TIMEOUT_SECONDS
-    return config.request_timeout_seconds
-
-
-__all__ = ["HTTPClient", "Response", "build_default_timeout"]
+__all__ = ["HTTPClient", "Response"]
