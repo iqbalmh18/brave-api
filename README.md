@@ -3,7 +3,7 @@
 <img src="./brave-api.svg" alt="Brave API banner" />
 
 <p align="center">
-An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface.
+An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
 </p>
 
 <p align="center"><em>Not affiliated with or endorsed by Brave Software.</em></p>
@@ -13,6 +13,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 ## Table of Contents
 
 - [Features](#features)
+- [Architecture](#architecture)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -23,9 +24,9 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - [Streaming Events](#streaming-events)
 - [StreamResult](#streamresult)
 - [Error Handling](#error-handling)
+- [MCP Server](#mcp-server)
 - [Project Structure](#project-structure)
 - [Examples](#examples)
-- [Star History](#star-history)
 - [License](#license)
 
 ---
@@ -46,6 +47,12 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - `client.search()` — scrape structured web and news results with pagination
 - `client.suggest()` — autocomplete suggestions with entity detection
 
+**MCP Server**
+
+- Exposes `ask`, `search`, and `suggest` as MCP tools, ready to drop into Claude Desktop, Claude Code, or any MCP-compatible client
+- Configured entirely through environment variables — no code changes required
+- Shares the same typed client and error hierarchy as the library
+
 **General**
 
 - Async-native, built on `curl_cffi` with browser fingerprinting (no API key required)
@@ -55,10 +62,30 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 
 ---
 
+## Architecture
+
+```mermaid
+graph TD
+    A[Your Application] -->|imports| B[BraveClient]
+    C[MCP Client<br/>Claude Desktop / Claude Code / other] -->|stdio| D[Brave API MCP Server]
+    D -->|ask / search / suggest| B
+    B --> E[HTTPClient<br/>curl_cffi]
+    E --> F[Brave Search / Brave AI]
+
+    style B fill:#2b2b2b,stroke:#888,color:#fff
+    style D fill:#2b2b2b,stroke:#888,color:#fff
+    style F fill:#1a1a1a,stroke:#888,color:#fff
+```
+
+The library can be used directly in Python code, or indirectly through the MCP server, which wraps the same `BraveClient` and exposes it as tools for LLM-based agents.
+
+---
+
 ## Requirements
 
 - Python 3.11+
 - Dependencies: `curl-cffi`, `pydantic`, `pillow`
+- Optional (MCP server): `fastmcp`
 
 ---
 
@@ -74,6 +101,12 @@ From source:
 git clone https://github.com/iqbalmh18/brave-api
 cd brave-api
 uv pip install -e ".[dev]"
+```
+
+With MCP server support:
+
+```bash
+uv pip install "brave-api[mcp] @ git+https://github.com/iqbalmh18/brave-api.git"
 ```
 
 ---
@@ -311,6 +344,27 @@ ERROR                                     server error event
 CHALLENGE                                 CAPTCHA required
 ```
 
+The sequence below shows how these events flow during a single `ask()` call:
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Client as BraveClient
+    participant Brave as Brave AI
+
+    App->>Client: ask(query)
+    Client->>Brave: POST /api/tap/v1/new
+    Brave-->>Client: SSE stream
+
+    loop until stream ends
+        Brave-->>Client: TEXT_DELTA / THINKING_DELTA
+        Brave-->>Client: AUGMENT_WITH_WEB / IMAGES / INFOBOX
+    end
+
+    Brave-->>Client: FOLLOWUPS
+    Client-->>App: StreamResult
+```
+
 ---
 
 ## StreamResult
@@ -377,6 +431,99 @@ except BraveAPIError as e:
 
 Retry strategy: HTTP 429 and 5xx responses are retried with exponential backoff (`backoff_seconds * 2^attempt`).
 
+The MCP server reuses this same hierarchy: any `BraveAPIError` raised by the client is caught and surfaced to the calling MCP client as a `ToolError`, so agents receive a clean, descriptive message instead of a raw stack trace.
+
+---
+
+## MCP Server
+
+<img src="./brave-api-mcp.svg" alt="Brave API MCP banner" />
+
+Brave API ships with a [Model Context Protocol](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com), exposing the client's core capabilities as tools for any MCP-compatible agent (Claude Desktop, Claude Code, Cursor, etc.).
+
+```mermaid
+graph LR
+    subgraph MCP Client
+        A[Claude Desktop / Claude Code]
+    end
+
+    subgraph Brave API MCP Server
+        B[ask]
+        C[search]
+        D[suggest]
+    end
+
+    A -->|stdio transport| B
+    A -->|stdio transport| C
+    A -->|stdio transport| D
+    B --> E[BraveClient]
+    C --> E
+    D --> E
+    E --> F[Brave Search / Brave AI]
+
+    style E fill:#2b2b2b,stroke:#888,color:#fff
+    style F fill:#1a1a1a,stroke:#888,color:#fff
+```
+
+### Tools
+
+| Tool | Description | Read-only |
+|---|---|---|
+| `ask` | Ask Brave AI a question and receive a complete AI-generated answer with citations, source URLs, images, videos, and follow-up suggestions | Yes |
+| `search` | Search Brave and return structured web and news results (raw SERP, no AI answer) | Yes |
+| `suggest` | Fetch autocomplete suggestions for a partial query, including rich entity suggestions with thumbnails | Yes |
+
+### Running the server
+
+```bash
+python -m brave_api.mcp.server
+```
+
+The server communicates over stdio and is meant to be launched by an MCP client, not run standalone in a terminal for interactive use.
+
+### Configuring an MCP client
+
+Example configuration for Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "brave-api": {
+      "command": "python",
+      "args": ["-m", "brave_api.mcp.server"],
+      "env": {
+        "BRAVE_COUNTRY": "id",
+        "BRAVE_LANGUAGE": "id",
+        "BRAVE_SAFESEARCH": "moderate"
+      }
+    }
+  }
+}
+```
+
+### Environment variables
+
+All server behavior is controlled through environment variables — no code changes required.
+
+| Variable | Default | Description |
+|---|---|---|
+| `BRAVE_BASE_URL` | `https://search.brave.com` | Base URL for the Brave endpoints |
+| `BRAVE_GEOLOC` | library default | Geolocation as `lat x lng` |
+| `BRAVE_COUNTRY` | library default | ISO 3166-1 country code |
+| `BRAVE_LANGUAGE` | library default | Response language (BCP-47) |
+| `BRAVE_UI_LANG` | library default | UI language, e.g. `en-us` |
+| `BRAVE_SAFESEARCH` | library default | `off`, `moderate`, or `strict` |
+| `BRAVE_ENABLE_RESEARCH` | `false` | `true`/`false`/`1`/`0`/`yes`/`no` — enables deep research mode |
+| `BRAVE_REQUEST_TIMEOUT` | library default | Request timeout in seconds |
+| `BRAVE_MAX_RETRIES` | library default | Maximum retry attempts on transient failures |
+| `BRAVE_MAX_CONCURRENT` | library default | Maximum concurrent requests |
+
+Invalid numeric or boolean values fall back to their defaults, with a warning logged rather than raising an error at startup.
+
+### Error surface
+
+Every tool call is wrapped so that any `BraveAPIError` raised by the underlying client is converted into an MCP `ToolError` with the original message, keeping error handling consistent between direct library use and MCP-based use.
+
 ---
 
 ## Project Structure
@@ -386,24 +533,27 @@ brave_api/
 ├── __init__.py                 # All public exports
 ├── client.py                   # BraveClient - main facade
 ├── conversation.py             # Conversation - single conversation turn
+├── mcp
+│   ├── server.py                # MCP server factory and entry point
+│   └── tools.py                 # ask / search / suggest tool definitions
 ├── _crypto
-│   └── keys.py                 # AES-256 symmetric key generation
-├── exceptions.py               # Exception hierarchy
+│   └── keys.py                  # AES-256 symmetric key generation
+├── exceptions.py                # Exception hierarchy
 ├── _internal
-│   ├── config.py               # ClientConfig (Pydantic, frozen)
-│   ├── constants.py            # Global constants
-│   ├── models.py               # Data models (ImageResult, WebResult, etc.)
-│   ├── token_extractor.py      # SSR token extractor
-│   └── types.py                # Enums, Protocol
+│   ├── config.py                 # ClientConfig (Pydantic, frozen)
+│   ├── constants.py               # Global constants
+│   ├── models.py                  # Data models (ImageResult, WebResult, etc.)
+│   ├── token_extractor.py         # SSR token extractor
+│   └── types.py                   # Enums, Protocol
 ├── py.typed
 ├── _search
-│   └── parser.py               # HTML parser for search() and suggest()
+│   └── parser.py                 # HTML parser for search() and suggest()
 ├── _streaming
-│   ├── parser.py               # SSE line -> StreamEvent
-│   └── result.py               # StreamAccumulator
+│   ├── parser.py                  # SSE line -> StreamEvent
+│   └── result.py                  # StreamAccumulator
 └── _transport
-    ├── http.py                 # HTTPClient (curl_cffi wrapper)
-    └── retry.py                # Exponential backoff retry
+    ├── http.py                    # HTTPClient (curl_cffi wrapper)
+    └── retry.py                   # Exponential backoff retry
 ```
 
 ---
@@ -430,18 +580,6 @@ brave_api/
 | `examples/interactive_chat.py` | Terminal REPL chat |
 | `examples/ask_method.py` | ask() and ask_stream() demos |
 | `examples/search_method.py` | search() and suggest() |
-
----
-
-## Star History
-
-<a href="https://star-history.com/#iqbalmh18/brave-api&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=iqbalmh18/brave-api&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=iqbalmh18/brave-api&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=iqbalmh18/brave-api&type=Date" />
-  </picture>
-</a>
 
 ---
 

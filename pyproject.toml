@@ -1,6 +1,6 @@
 [project]
 name = "brave-api"
-version = "0.1.1"
+version = "0.1.2"
 description = "An asynchronous Python client for the Brave Ask & Search API."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -34,6 +34,14 @@ dependencies = [
     "pydantic>=2.11.0",
 ]
 
+[project.optional-dependencies]
+mcp = [
+    "fastmcp>=3.4.3",
+]
+
+[project.scripts]
+brave-api-mcp = "brave_api.mcp.server:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.4.0",
@@ -41,6 +49,7 @@ dev = [
     "ruff>=0.13.0",
     "pyright>=1.1.400",
     "rich>=14.0.0",
+    "fastmcp>=3.4.3",
 ]
 
 [tool.pytest.ini_options]
@@ -71,4 +80,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["brave_api"]
-include = ["brave_api/py.typed"]
+include = [
+    "brave_api/py.typed",
+    "brave_api/mcp/**",
+]

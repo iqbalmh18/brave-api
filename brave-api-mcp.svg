@@ -1,0 +1,56 @@
+<svg width="1200" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>brave-api-mcp banner</title>
+<desc>Light theme banner with a subtle grid background, showing the brave-api-mcp tool connected, with tabs and a log panel</desc>
+
+<defs>
+<pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+<path d="M 28 0 L 0 0 0 28" fill="none" stroke="#e8e6df" stroke-width="1"/>
+</pattern>
+</defs>
+
+<rect width="1200" height="300" fill="#faf9f5"/>
+<rect width="1200" height="300" fill="url(#grid)"/>
+
+<rect x="0" y="0" width="1200" height="52" fill="#ffffff"/>
+<line x1="0" y1="52" x2="1200" y2="52" stroke="#e3e1d9" stroke-width="1"/>
+
+<circle cx="34" cy="26" r="10" fill="#D85A30"/>
+<text x="54" y="32" font-family="'Courier New', monospace" font-size="20" font-weight="600" fill="#2c2c2a">brave-api-mcp</text>
+
+<rect x="1030" y="14" width="88" height="24" rx="12" fill="#EAF3DE"/>
+<text x="1074" y="30" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#27500A" text-anchor="middle">connected</text>
+
+<rect x="1128" y="14" width="82" height="24" rx="4" fill="#ffffff" stroke="#d3d1c7" stroke-width="1"/>
+<text x="1169" y="30" font-family="Arial, sans-serif" font-size="12" fill="#5f5e5a" text-anchor="middle">Disconnect</text>
+
+<g font-family="Arial, sans-serif" font-size="13" fill="#888780">
+<text x="34" y="76">Tools (4)</text>
+<text x="130" y="76">Resources (0)</text>
+<text x="250" y="76">Prompts (0)</text>
+<text x="350" y="76">History (2)</text>
+<text x="450" y="76">Events</text>
+</g>
+<text x="530" y="76" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#2c2c2a">Log (4)</text>
+<rect x="527" y="82" width="55" height="2" fill="#D85A30"/>
+<text x="620" y="76" font-family="Arial, sans-serif" font-size="13" fill="#888780">Tests</text>
+<line x1="0" y1="94" x2="1200" y2="94" stroke="#e3e1d9" stroke-width="1"/>
+
+<text x="34" y="122" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#888780" letter-spacing="1">CONNECTION LOG</text>
+
+<rect x="24" y="140" width="1152" height="140" rx="6" fill="#ffffff" stroke="#e3e1d9" stroke-width="1"/>
+
+<g font-family="'Courier New', monospace" font-size="12">
+<text x="44" y="166" fill="#888780">01:16:28.204</text>
+<text x="150" y="166" fill="#185FA5" font-weight="700">INFO</text>
+<text x="200" y="166" fill="#5f5e5a">Call tool search finished in 891ms</text>
+
+<text x="44" y="192" fill="#888780">01:16:38.363</text>
+<text x="150" y="192" fill="#185FA5" font-weight="700">INFO</text>
+<text x="200" y="192" fill="#5f5e5a">Call tool ask finished in 43180ms</text>
+
+<text x="44" y="218" fill="#3B6D11">"content"</text><text x="120" y="218" fill="#888780">: [</text>
+<text x="64" y="242" fill="#3B6D11">"type"</text><text x="120" y="242" fill="#888780">:</text> <text x="140" y="242" fill="#993C1D">"text"</text><text x="184" y="242" fill="#888780">,</text>
+<text x="64" y="266" fill="#3B6D11">"url"</text><text x="112" y="266" fill="#888780">:</text> <text x="130" y="266" fill="#085041">"github.com/mcp"</text>
+</g>
+
+</svg>
