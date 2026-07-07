@@ -445,11 +445,11 @@ Brave API ships with a [Model Context Protocol](https://modelcontextprotocol.io)
 
 ```mermaid
 graph LR
-    subgraph MCP Client — stdio
+    subgraph stdio["MCP Client (stdio)"]
         A[Claude Desktop / Claude Code]
     end
 
-    subgraph MCP Client — HTTP
+    subgraph http["MCP Client (HTTP)"]
         H[OpenAI-compatible client<br/>or remote agent]
     end
 
