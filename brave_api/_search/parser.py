@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+
 from typing import Any
 
 from .._internal.models import (
@@ -22,10 +23,31 @@ _TITLE_DIV = re.compile(
     r'<div[^>]+class="[^"]*\btitle\b[^"]*"[^>]*>(.*?)</div>',
     re.DOTALL,
 )
+_TITLE_ATTR = re.compile(
+    r'<div[^>]+class="[^"]*\btitle\b[^"]*"[^>]+title="([^"]*)"',
+    re.DOTALL,
+)
 _DESC_P = re.compile(
     r'<p[^>]+class="[^"]*\bsnippet-description\b[^"]*"[^>]*>(.*?)</p>',
     re.DOTALL,
 )
+_DESC_INLINE_QA = re.compile(
+    r'<div[^>]+class="[^"]*\binline-qa-question\b[^"]*"[^>]*>(.*?)</div>',
+    re.DOTALL,
+)
+_GENERIC_SNIPPET = re.compile(
+    r'<div[^>]+class="[^"]*\bgeneric-snippet\b[^"]*"[^>]*>(.*?)</div>',
+    re.DOTALL,
+)
+_AGE_T_SECONDARY = re.compile(
+    r'<span[^>]+class="t-secondary"[^>]*>([^<]*\d{4})',
+    re.DOTALL,
+)
+_AGE_RELATIVE = re.compile(
+    r'<span[^>]+class="t-secondary"[^>]*>(\d+\s+\w+\s+ago)',
+    re.DOTALL,
+)
+_DATE_PREFIX = re.compile(r"^[A-Za-z]+ \d{1,2}, \d{4} -\s*")
 
 _DATA_URL = re.compile(r'\bdata-url=["\']([^"\']+)["\']')
 
@@ -44,7 +66,7 @@ _SOURCE_SPAN = re.compile(
 _HTML_TAG = re.compile(r"<[^>]+>")
 
 _RESULT_SNIPPET = re.compile(
-    r'<div[^>]+class="[^"]*\bsnippet\b[^"]*"[^>]*>',
+    r'<div[^>]+class="[^"]*\bsnippet\b[^"]*"[^>]+data-pos="\d+"',
     re.DOTALL,
 )
 
@@ -83,25 +105,48 @@ def _extract_href(block: str) -> str | None:
 
 
 def _extract_title(block: str) -> str | None:
-    for pat in (_TITLE_SPAN, _TITLE_DIV):
+    for pat in (_TITLE_DIV, _TITLE_SPAN):
         m = pat.search(block)
         if m:
             title = _strip_tags(m.group(1))
-            if title:
+            if title and not title.startswith("›"):
                 return title
+    m = _TITLE_ATTR.search(block)
+    if m:
+        return m.group(1) or None
     return None
 
 
 def _extract_description(block: str) -> str | None:
     m = _DESC_P.search(block)
     if m:
-        return _strip_tags(m.group(1)) or None
+        desc = _strip_tags(m.group(1))
+        desc = _DATE_PREFIX.sub("", desc)
+        return desc or None
+    m = _DESC_INLINE_QA.search(block)
+    if m:
+        desc = _strip_tags(m.group(1))
+        desc = _DATE_PREFIX.sub("", desc)
+        return desc or None
+    m = _GENERIC_SNIPPET.search(block)
+    if m:
+        desc = _strip_tags(m.group(1))
+        desc = _DATE_PREFIX.sub("", desc)
+        return desc or None
     return None
 
 
 def _extract_age(block: str) -> str | None:
     m = _AGE_SPAN.search(block)
-    return _strip_tags(m.group(1)) if m else None
+    if m:
+        return _strip_tags(m.group(1)) or None
+    m = _AGE_T_SECONDARY.search(block)
+    if m:
+        return _strip_tags(m.group(1)) or None
+    m = _AGE_RELATIVE.search(block)
+    if m:
+        return _strip_tags(m.group(1)) or None
+    return None
 
 
 def _split_into_blocks(html: str, open_tag_pattern: re.Pattern[str]) -> list[str]:
@@ -237,7 +282,7 @@ def parse_suggest_json(data: Any, query: str) -> list[SuggestItem]:
                     thumbnail: str | None = item.get("img") or item.get("thumbnail") or item.get("image")
                     if thumbnail and not str(thumbnail).startswith(("http://", "https://")):
                         thumbnail = None
-                    entity_type: str | None = item.get("entity_type") or item.get("type")
+                    entity_type: str | None = item.get("entity_type") or item.get("type") or item.get("category")
 
                     items.append(
                         SuggestItem(
@@ -255,12 +300,17 @@ def parse_suggest_json(data: Any, query: str) -> list[SuggestItem]:
             elif isinstance(item, dict):
                 text = str(item.get("q") or item.get("query") or item.get("text") or "").strip()
                 if text:
+                    is_entity = bool(item.get("is_entity") or item.get("entity"))
+                    thumbnail = item.get("img") or item.get("thumbnail") or item.get("image")
+                    if thumbnail and not str(thumbnail).startswith(("http://", "https://")):
+                        thumbnail = None
+                    entity_type = item.get("entity_type") or item.get("type") or item.get("category")
                     items.append(
                         SuggestItem(
                             text=text,
-                            is_entity=bool(item.get("is_entity")),
-                            thumbnail=item.get("img"),
-                            entity_type=item.get("entity_type"),
+                            is_entity=is_entity,
+                            thumbnail=str(thumbnail) if thumbnail else None,
+                            entity_type=str(entity_type) if entity_type else None,
                         )
                     )
 
