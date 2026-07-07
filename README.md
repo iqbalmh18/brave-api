@@ -49,7 +49,8 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 
 **MCP Server**
 
-- Exposes `ask`, `search`, and `suggest` as MCP tools, ready to drop into Claude Desktop, Claude Code, or any MCP-compatible client
+- Exposes `ask`, `search`, and `suggest` as MCP tools, ready to drop into Claude Desktop, Claude Code, Cursor, or any MCP-compatible client
+- Supports both **stdio** (local clients) and **HTTP/SSE** (remote or multi-client deployments) transports
 - Configured entirely through environment variables — no code changes required
 - Shares the same typed client and error hierarchy as the library
 
@@ -68,6 +69,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 graph TD
     A[Your Application] -->|imports| B[BraveClient]
     C[MCP Client<br/>Claude Desktop / Claude Code / other] -->|stdio| D[Brave API MCP Server]
+    G[OpenAI-compatible Client<br/>or remote agent] -->|HTTP / SSE| D
     D -->|ask / search / suggest| B
     B --> E[HTTPClient<br/>curl_cffi]
     E --> F[Brave Search / Brave AI]
@@ -443,8 +445,12 @@ Brave API ships with a [Model Context Protocol](https://modelcontextprotocol.io)
 
 ```mermaid
 graph LR
-    subgraph MCP Client
+    subgraph MCP Client — stdio
         A[Claude Desktop / Claude Code]
+    end
+
+    subgraph MCP Client — HTTP
+        H[OpenAI-compatible client<br/>or remote agent]
     end
 
     subgraph Brave API MCP Server
@@ -456,6 +462,9 @@ graph LR
     A -->|stdio transport| B
     A -->|stdio transport| C
     A -->|stdio transport| D
+    H -->|HTTP / SSE transport| B
+    H -->|HTTP / SSE transport| C
+    H -->|HTTP / SSE transport| D
     B --> E[BraveClient]
     C --> E
     D --> E
@@ -475,15 +484,40 @@ graph LR
 
 ### Running the server
 
+**stdio** (default — for local clients like Claude Desktop, Claude Code, Cursor):
+
 ```bash
 python -m brave_api.mcp.server
+# or via the CLI entry-point
+brave-api-mcp
 ```
 
 The server communicates over stdio and is meant to be launched by an MCP client, not run standalone in a terminal for interactive use.
 
+**HTTP** (for remote or multi-client deployments, OpenAI-compatible clients):
+
+```bash
+brave-api-mcp --http
+# bind to a specific host/port
+brave-api-mcp --http --host 0.0.0.0 --port 8000
+```
+
+Full CLI reference:
+
+```
+usage: brave-api-mcp [-h] [--http] [--host HOST] [--port PORT]
+                     [--log-level {debug,info,warning,error,critical}]
+
+options:
+  --http              Run with HTTP/SSE transport instead of stdio.
+  --host HOST         Host address to bind to (HTTP transport only). [default: 127.0.0.1]
+  --port PORT         Port to bind to (HTTP transport only). [default: 8000]
+  --log-level LEVEL   Logging level. [default: warning]
+```
+
 ### Configuring an MCP client
 
-Example configuration for Claude Desktop (`claude_desktop_config.json`):
+**Claude Desktop / Claude Code** (`claude_desktop_config.json` or `~/.claude/claude_code_config.json`):
 
 ```json
 {
@@ -500,6 +534,20 @@ Example configuration for Claude Desktop (`claude_desktop_config.json`):
   }
 }
 ```
+
+Or via the Claude Code CLI:
+
+```bash
+claude mcp add brave-api python -- -m brave_api.mcp.server
+```
+
+**OpenAI-compatible clients / remote deployments** — start the server in HTTP mode and point the client at the endpoint:
+
+```bash
+brave-api-mcp --http --host 0.0.0.0 --port 8000
+```
+
+The server exposes a standard MCP-over-HTTP (Streamable HTTP / SSE) endpoint at `http://<host>:<port>/mcp`. Any client that supports the MCP HTTP transport can connect to it directly.
 
 ### Environment variables
 

@@ -150,14 +150,13 @@ class TestCreateServer:
         async with Client(mcp_server) as client:
             tools = await client.list_tools()
         tool_names = {t.name for t in tools}
-        assert tool_names == {"ask", "ask_stream", "search", "suggest"}
+        assert tool_names == {"ask", "search", "suggest"}
 
     async def test_tool_descriptions_present(self, mcp_server: FastMCP) -> None:
         async with Client(mcp_server) as client:
             tools = await client.list_tools()
         by_name = {t.name: t for t in tools}
         assert by_name["ask"].description
-        assert by_name["ask_stream"].description
         assert by_name["search"].description
         assert by_name["suggest"].description
 
@@ -251,93 +250,6 @@ class TestAskTool:
         """raw_events should be stripped — they contain non-serialisable objects."""
         result = await _call(mcp_server, "ask", query="test")
         assert "raw_events" not in result.data
-
-
-def _make_stream_events() -> list:
-    from brave_api._internal.models import StreamEvent
-    from brave_api._internal.types import StreamEventType
-    return [
-        StreamEvent(type=StreamEventType.TEXT_DELTA, raw_type="text_delta", payload={"delta": "Hello "}),
-        StreamEvent(type=StreamEventType.TEXT_DELTA, raw_type="text_delta", payload={"delta": "world."}),
-        StreamEvent(type=StreamEventType.FOLLOWUPS, raw_type="followups", payload={"followups": ["What next?"]}),
-        StreamEvent(type=StreamEventType.TEXT_STOP, raw_type="text_stop", payload={}),
-    ]
-
-
-def _make_mock_conversation(events=None) -> AsyncMock:
-    from unittest.mock import MagicMock
-
-    async def _stream_events():
-        for e in (events or _make_stream_events()):
-            yield e
-
-    conv = MagicMock()
-    conv.stream_events = _stream_events
-    return conv
-
-
-class TestAskStreamTool:
-    @pytest.fixture
-    def mcp_stream(self, mock_client: AsyncMock) -> Generator[FastMCP]:
-        mock_client.conversation = AsyncMock(return_value=_make_mock_conversation())
-        with patch("brave_api.mcp.server.BraveClient", return_value=mock_client):
-            yield create_server()
-
-    async def test_happy_path_returns_dict(self, mcp_stream: FastMCP) -> None:
-        result = await _call(mcp_stream, "ask_stream", query="test question")
-        data = result.data
-        assert isinstance(data, dict)
-        assert data["text"] == "Hello world."
-        assert data["followups"] == ["What next?"]
-
-    async def test_raw_events_excluded(self, mcp_stream: FastMCP) -> None:
-        result = await _call(mcp_stream, "ask_stream", query="test")
-        assert "raw_events" not in result.data
-
-    async def test_invalid_query_type_raises_tool_error(self, mcp_stream: FastMCP) -> None:
-        with pytest.raises(Exception) as exc_info:
-            await _call(mcp_stream, "ask_stream", query="test", query_type="bad_type")
-        assert "query_type" in str(exc_info.value).lower() or "invalid" in str(exc_info.value).lower()
-
-    async def test_brave_api_error_becomes_tool_error(self, mock_client: AsyncMock) -> None:
-        mock_client.conversation = AsyncMock(side_effect=TransportError("Connection refused"))
-        with patch("brave_api.mcp.server.BraveClient", return_value=mock_client):
-            server = create_server()
-            with pytest.raises(Exception) as exc_info:
-                await _call(server, "ask_stream", query="test")
-        assert "Connection refused" in str(exc_info.value)
-
-    async def test_language_forwarded(self, mock_client: AsyncMock) -> None:
-        mock_client.conversation = AsyncMock(return_value=_make_mock_conversation())
-        with patch("brave_api.mcp.server.BraveClient", return_value=mock_client):
-            server = create_server()
-            await _call(server, "ask_stream", query="test", language="id")
-        assert mock_client.conversation.call_args.kwargs["language"] == "id"
-
-    async def test_auto_tools_forwarded(self, mock_client: AsyncMock) -> None:
-        mock_client.conversation = AsyncMock(return_value=_make_mock_conversation())
-        with patch("brave_api.mcp.server.BraveClient", return_value=mock_client):
-            server = create_server()
-            await _call(server, "ask_stream", query="test", auto_tools=False)
-        assert mock_client.conversation.call_args.kwargs["auto_tools"] is False
-
-    async def test_error_event_raises_tool_error(self, mock_client: AsyncMock) -> None:
-        from brave_api._internal.models import StreamEvent
-        from brave_api._internal.types import StreamEventType
-
-        error_event = StreamEvent(
-            type=StreamEventType.ERROR,
-            raw_type="error",
-            payload={"message": "Server error occurred"},
-        )
-        mock_client.conversation = AsyncMock(
-            return_value=_make_mock_conversation(events=[error_event])
-        )
-        with patch("brave_api.mcp.server.BraveClient", return_value=mock_client):
-            server = create_server()
-            with pytest.raises(Exception) as exc_info:
-                await _call(server, "ask_stream", query="test")
-        assert "Server error occurred" in str(exc_info.value)
 
 
 class TestSearchTool:
