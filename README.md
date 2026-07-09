@@ -6,8 +6,6 @@
 An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
 </p>
 
-<p align="center"><em>Not affiliated with or endorsed by Brave Software.</em></p>
-
 ---
 
 ## Table of Contents
@@ -443,37 +441,6 @@ The MCP server reuses this same hierarchy: any `BraveAPIError` raised by the cli
 
 Brave API ships with a [Model Context Protocol](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com), exposing the client's core capabilities as tools for any MCP-compatible agent (Claude Desktop, Claude Code, Cursor, etc.).
 
-```mermaid
-graph LR
-    subgraph stdio["MCP Client (stdio)"]
-        A[Claude Desktop / Claude Code]
-    end
-
-    subgraph http["MCP Client (HTTP)"]
-        H[OpenAI-compatible client<br/>or remote agent]
-    end
-
-    subgraph Brave API MCP Server
-        B[ask]
-        C[search]
-        D[suggest]
-    end
-
-    A -->|stdio transport| B
-    A -->|stdio transport| C
-    A -->|stdio transport| D
-    H -->|HTTP / SSE transport| B
-    H -->|HTTP / SSE transport| C
-    H -->|HTTP / SSE transport| D
-    B --> E[BraveClient]
-    C --> E
-    D --> E
-    E --> F[Brave Search / Brave AI]
-
-    style E fill:#2b2b2b,stroke:#888,color:#fff
-    style F fill:#1a1a1a,stroke:#888,color:#fff
-```
-
 ### Tools
 
 | Tool | Description | Read-only |
@@ -571,38 +538,6 @@ Invalid numeric or boolean values fall back to their defaults, with a warning lo
 ### Error surface
 
 Every tool call is wrapped so that any `BraveAPIError` raised by the underlying client is converted into an MCP `ToolError` with the original message, keeping error handling consistent between direct library use and MCP-based use.
-
----
-
-## Project Structure
-
-```
-brave_api/
-├── __init__.py                 # All public exports
-├── client.py                   # BraveClient - main facade
-├── conversation.py             # Conversation - single conversation turn
-├── mcp
-│   ├── server.py                # MCP server factory and entry point
-│   └── tools.py                 # ask / search / suggest tool definitions
-├── _crypto
-│   └── keys.py                  # AES-256 symmetric key generation
-├── exceptions.py                # Exception hierarchy
-├── _internal
-│   ├── config.py                 # ClientConfig (Pydantic, frozen)
-│   ├── constants.py               # Global constants
-│   ├── models.py                  # Data models (ImageResult, WebResult, etc.)
-│   ├── token_extractor.py         # SSR token extractor
-│   └── types.py                   # Enums, Protocol
-├── py.typed
-├── _search
-│   └── parser.py                 # HTML parser for search() and suggest()
-├── _streaming
-│   ├── parser.py                  # SSE line -> StreamEvent
-│   └── result.py                  # StreamAccumulator
-└── _transport
-    ├── http.py                    # HTTPClient (curl_cffi wrapper)
-    └── retry.py                   # Exponential backoff retry
-```
 
 ---
 
