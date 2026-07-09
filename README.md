@@ -92,7 +92,7 @@ The library can be used directly in Python code, or indirectly through the MCP s
 ## Installation
 
 ```bash
-uv pip install git+https://github.com/iqbalmh18/brave-api.git
+uv pip install brave-api-python
 ```
 
 From source:
@@ -106,7 +106,7 @@ uv pip install -e ".[dev]"
 With MCP server support:
 
 ```bash
-uv pip install "brave-api[mcp] @ git+https://github.com/iqbalmh18/brave-api.git"
+uv pip install "brave-api-python[mcp]"
 ```
 
 ---
