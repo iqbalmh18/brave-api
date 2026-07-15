@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Any, Literal
+import logging
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
+from urllib.parse import urlsplit
 
 from curl_cffi import CurlMime
-from curl_cffi.requests import AsyncSession, Response
+from curl_cffi.requests import AsyncSession, ProxySpec, Response
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-
     from .._internal.config import ClientConfig
 
 from .._internal.constants import (
@@ -25,6 +26,38 @@ from .._internal.constants import (
 from ..exceptions import HTTPStatusError, InvalidResponseError
 
 Method = Literal["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
+T = TypeVar("T")
+logger = logging.getLogger("brave_api.transport.http")
+
+
+def _proxy_label(proxy: str | None) -> str:
+    if proxy is None:
+        return "direct connection"
+    parsed = urlsplit(proxy)
+    return f"{parsed.scheme}://{parsed.hostname or '<invalid>'}:{parsed.port or '<default>'}"
+
+
+class ProxyPool:
+    """Round-robin proxy pool that permanently removes failed proxies."""
+
+    def __init__(self, proxies: list[str]) -> None:
+        self._proxies = list(proxies)
+        self._inactive: set[str] = set()
+        self._next_index = 0
+        self._lock = asyncio.Lock()
+
+    async def candidates(self) -> list[str | None]:
+        async with self._lock:
+            active = [proxy for proxy in self._proxies if proxy not in self._inactive]
+            if active:
+                start = self._next_index % len(active)
+                self._next_index = (start + 1) % len(active)
+                active = active[start:] + active[:start]
+            return [*active, None]
+
+    async def disable(self, proxy: str) -> None:
+        async with self._lock:
+            self._inactive.add(proxy)
 
 
 class HTTPClient:
@@ -32,6 +65,7 @@ class HTTPClient:
         self._config: ClientConfig = config
         self._session: AsyncSession[Response] | None = None
         self._semaphore: asyncio.Semaphore = asyncio.Semaphore(max_concurrent or config.max_concurrent or DEFAULT_MAX_CONCURRENT)
+        self._proxy_pool = ProxyPool(config.proxy_list)
 
     async def _with_rate_limit(self, operation):
         async with self._semaphore:
@@ -125,6 +159,19 @@ class HTTPClient:
         headers: dict[str, str] | None = None,
         json_body: dict[str, Any] | None = None,
     ) -> Response:
+        return await self._with_proxy_fallback(
+            lambda proxy: self._request_with_proxy(method, url, params, headers, json_body, proxy)
+        )
+
+    async def _request_with_proxy(
+        self,
+        method: Method,
+        url: str,
+        params: dict[str, Any] | None,
+        headers: dict[str, str] | None,
+        json_body: dict[str, Any] | None,
+        proxy: str | None,
+    ) -> Response:
         session = await self._ensure_session()
         response = await session.request(
             method,
@@ -133,9 +180,34 @@ class HTTPClient:
             headers=headers,
             json=json_body,
             timeout=self._config.request_timeout_seconds,
+            proxies=self._proxy_spec(proxy),
         )
         self._raise_for_status(response, op=f"{method} {url}")
         return response
+
+    async def _with_proxy_fallback(self, operation: Callable[[str | None], Awaitable[T]]) -> T:
+        candidates = await self._proxy_pool.candidates()
+        for index, proxy in enumerate(candidates):
+            try:
+                logger.debug("Sending request through %s", _proxy_label(proxy))
+                return await operation(proxy)
+            except HTTPStatusError:
+                raise
+            except Exception as exc:
+                if proxy is None:
+                    raise
+                await self._proxy_pool.disable(proxy)
+                logger.warning("Disabled failed proxy %s: %s", _proxy_label(proxy), exc)
+                if index == len(candidates) - 1:
+                    raise
+                logger.info("Trying the next proxy or direct connection")
+        raise AssertionError("Proxy fallback exhausted without an attempt")
+
+    @staticmethod
+    def _proxy_spec(proxy: str | None) -> ProxySpec | None:
+        if proxy is None:
+            return None
+        return {"http": proxy, "https": proxy}
 
     async def get_json(
         self,
@@ -171,25 +243,35 @@ class HTTPClient:
         headers: dict[str, str] | None = None,
     ) -> AsyncGenerator[str | bytes, None]:
         session = await self._ensure_session()
-        stream_timeout = self._config.stream_timeout_seconds
-        try:
-            async with session.stream(
-                "GET",
-                url,
-                params=params,
-                headers=headers,
-                timeout=stream_timeout,
-            ) as response:
-                self._raise_for_status(response, op=f"GET {url}")
-                try:
+        for proxy in await self._proxy_pool.candidates():
+            yielded = False
+            try:
+                logger.debug("Opening stream through %s", _proxy_label(proxy))
+                async with session.stream(
+                    "GET", url, params=params, headers=headers, timeout=self._config.stream_timeout_seconds,
+                    proxies=self._proxy_spec(proxy),
+                ) as response:
+                    self._raise_for_status(response, op=f"GET {url}")
                     async for line in response.aiter_lines():
+                        yielded = True
                         yield line
-                except GeneratorExit:
                     return
-        except RuntimeError as exc:
-            if "generator didn't stop after" in str(exc):
+            except GeneratorExit:
                 return
-            raise
+            except HTTPStatusError:
+                raise
+            except RuntimeError as exc:
+                if "generator didn't stop after" in str(exc):
+                    return
+                if proxy is None or yielded:
+                    raise
+                await self._proxy_pool.disable(proxy)
+                logger.warning("Disabled failed proxy %s: %s", _proxy_label(proxy), exc)
+            except Exception as exc:
+                if proxy is None or yielded:
+                    raise
+                await self._proxy_pool.disable(proxy)
+                logger.warning("Disabled failed proxy %s: %s", _proxy_label(proxy), exc)
 
     async def stream_multipart(
         self,
@@ -200,7 +282,6 @@ class HTTPClient:
         files: dict[str, tuple[str, bytes, str]] | None = None,
         data: dict[str, str] | None = None,
     ) -> AsyncGenerator[str | bytes, None]:
-        session = await self._ensure_session()
         stream_timeout = self._config.stream_timeout_seconds
         mime = CurlMime()
         try:
@@ -212,26 +293,36 @@ class HTTPClient:
                     data=content,
                 )
             
-            try:
-                async with session.stream(
-                    "POST",
-                    url,
-                    params=params,
-                    headers=headers,
-                    multipart=mime,
-                    data=data,
-                    timeout=stream_timeout,
-                ) as response:
-                    self._raise_for_status(response, op=f"POST {url}")
-                    try:
+            session = await self._ensure_session()
+            for proxy in await self._proxy_pool.candidates():
+                yielded = False
+                try:
+                    logger.debug("Opening multipart stream through %s", _proxy_label(proxy))
+                    async with session.stream(
+                        "POST", url, params=params, headers=headers, multipart=mime, data=data,
+                        timeout=stream_timeout, proxies=self._proxy_spec(proxy),
+                    ) as response:
+                        self._raise_for_status(response, op=f"POST {url}")
                         async for line in response.aiter_lines():
+                            yielded = True
                             yield line
-                    except GeneratorExit:
                         return
-            except RuntimeError as exc:
-                if "generator didn't stop after" in str(exc):
+                except GeneratorExit:
                     return
-                raise
+                except HTTPStatusError:
+                    raise
+                except RuntimeError as exc:
+                    if "generator didn't stop after" in str(exc):
+                        return
+                    if proxy is None or yielded:
+                        raise
+                    await self._proxy_pool.disable(proxy)
+                    logger.warning("Disabled failed proxy %s: %s", _proxy_label(proxy), exc)
+                except Exception as exc:
+                    if proxy is None or yielded:
+                        raise
+                    await self._proxy_pool.disable(proxy)
+                    logger.warning("Disabled failed proxy %s: %s", _proxy_label(proxy), exc)
         finally:
             mime.close()
 

@@ -1,6 +1,6 @@
 [project]
 name = "brave-api-python"
-version = "0.1.0"
+version = "0.1.1"
 description = "An asynchronous Python client for the Brave Ask & Search API."
 readme = "README.md"
 requires-python = ">=3.11"

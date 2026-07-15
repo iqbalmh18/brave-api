@@ -18,6 +18,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - [Ask](#ask)
 - [Search](#search)
 - [Client Configuration](#client-configuration)
+- [Proxy Support](#proxy-support)
 - [Conversation](#conversation)
 - [Streaming Events](#streaming-events)
 - [StreamResult](#streamresult)
@@ -58,6 +59,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - Full Pydantic models for runtime validation and type safety
 - Structured exception hierarchy for predictable error handling
 - Configurable language, country, safesearch, geolocation, timeouts, and retries
+- Optional round-robin proxy pool with automatic direct-connection fallback
 
 ---
 
@@ -274,6 +276,12 @@ config = ClientConfig(
     max_retries=3,
     retry_backoff_seconds=1.5,
 
+    # Optional proxy pool
+    proxy_list=[
+        "http://user:password@proxy-1.example:8080",
+        "socks5://proxy-2.example:1080",
+    ],
+
     # Browser fingerprinting
     impersonate="chrome136",
     extra_headers={"X-Custom": "value"},
@@ -282,6 +290,44 @@ config = ClientConfig(
 async with BraveClient(config) as client:
     ...
 ```
+
+---
+
+## Proxy Support
+
+Pass proxy URLs through `ClientConfig(proxy_list=...)` to rotate proxy usage across requests. The pool is shared by Ask, Search, Suggest, and streaming requests.
+
+```python
+from brave_api import BraveClient, ClientConfig
+
+config = ClientConfig(
+    proxy_list=[
+        "http://user:password@proxy-1.example:8080",
+        "http://proxy-2.example:8080",
+        "socks5://proxy-3.example:1080",
+    ],
+)
+
+async with BraveClient(config) as client:
+    result = await client.search("python asyncio tutorial")
+```
+
+Supported proxy schemes are `http`, `https`, `socks4`, `socks4a`, `socks5`, and `socks5h`. Proxy URLs are normalized and duplicate entries are removed when the configuration is created.
+
+The client selects an active proxy using round-robin order for each request. A proxy that fails before a response or stream data is received is disabled for the lifetime of that client. The next active proxy is tried automatically; if none remain, the request continues with `curl_cffi` configured for a direct connection (`proxies=None`). HTTP responses from Brave, including `429` and `5xx`, do not disable a proxy.
+
+Enable transport logs to see the selected proxy and fallback behavior. Proxy credentials are never included in these log messages.
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+```
+
+See [`examples/proxy-usage.py`](examples/proxy-usage.py) for a runnable example that reads comma-separated proxy URLs from `BRAVE_PROXY_LIST`.
 
 ---
 
@@ -563,6 +609,7 @@ Every tool call is wrapped so that any `BraveAPIError` raised by the underlying 
 | `examples/interactive_chat.py` | Terminal REPL chat |
 | `examples/ask_method.py` | ask() and ask_stream() demos |
 | `examples/search_method.py` | search() and suggest() |
+| `examples/proxy-usage.py` | Proxy pool rotation, fallback, and transport logging |
 
 ---
 
