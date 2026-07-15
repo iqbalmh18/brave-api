@@ -117,6 +117,16 @@ class StreamAccumulator:
         if not isinstance(service, dict):
             return
 
+        results = service.get("results")
+        service_type = service.get("type")
+        if isinstance(results, list):
+            if service_type == "images":
+                self._extract_images_from_results(results)
+            elif service_type == "videos":
+                self._extract_videos_from_results(results)
+            elif service_type in {"search", "news", "discussions", "local", "shopping"}:
+                self._extract_web_from_results(results)
+
         web = service.get("web")
         if isinstance(web, dict):
             self._extract_web_from_results(web.get("results", []))
@@ -199,13 +209,15 @@ class StreamAccumulator:
             if not isinstance(result, dict):
                 continue
 
+            properties = result.get("properties")
             url = (
                 result.get("image_url")
+                or (properties.get("url") if isinstance(properties, dict) else None)
                 or result.get("url")
                 or result.get("src")
                 or ""
             )
-            if not url:
+            if not isinstance(url, str) or not url.startswith(("http://", "https://")):
                 continue
 
             thumb_raw = result.get("thumbnail") or result.get("thumbnail_url")
@@ -223,8 +235,10 @@ class StreamAccumulator:
                         title=result.get("title"),
                         thumbnail=thumbnail,
                         source=result.get("source") or result.get("domain"),
-                        width=result.get("width"),
-                        height=result.get("height"),
+                        width=(properties.get("width") if isinstance(properties, dict) else None)
+                        or result.get("width"),
+                        height=(properties.get("height") if isinstance(properties, dict) else None)
+                        or result.get("height"),
                     )
                     self._images.append(image)
                     self._add_url(url)

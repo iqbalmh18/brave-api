@@ -81,8 +81,8 @@ wheels = [
 ]
 
 [[package]]
-name = "brave-api"
-version = "0.1.1"
+name = "brave-api-python"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "curl-cffi" },

@@ -109,7 +109,7 @@ class HTTPClient:
             },
         )
 
-    async def _ensure_session(self) -> AsyncSession:
+    async def _ensure_session(self) -> AsyncSession[Response]:
         if self._session is None:
             await self._open()
         
