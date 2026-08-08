@@ -12,6 +12,23 @@ preserved across releases.
 
 <!-- version list -->
 
+## v1.0.1 (2026-08-08)
+
+### Bug Fixes
+
+- Release workflows ([#4](https://github.com/iqbalmh18/brave-api/pull/4),
+  [`b959b59`](https://github.com/iqbalmh18/brave-api/commit/b959b5936eccb95f5186173cc89f700d2f92e0d3))
+
+- Use release token so tag push triggers publish workflow
+  ([#4](https://github.com/iqbalmh18/brave-api/pull/4),
+  [`b959b59`](https://github.com/iqbalmh18/brave-api/commit/b959b5936eccb95f5186173cc89f700d2f92e0d3))
+
+### Continuous Integration
+
+- Add manual publish trigger ([#4](https://github.com/iqbalmh18/brave-api/pull/4),
+  [`b959b59`](https://github.com/iqbalmh18/brave-api/commit/b959b5936eccb95f5186173cc89f700d2f92e0d3))
+
+
 ## v1.0.0 (2026-08-08)
 
 ### Bug Fixes
