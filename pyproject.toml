@@ -43,8 +43,6 @@ mcp = [
     "fastmcp>=3.4.3",
 ]
 build = [
-    # Pinned to the uv version that produced uv.lock, so the lockfile format
-    # stays compatible inside the semantic-release Docker container.
     "uv~=0.11.31",
 ]
 
@@ -136,9 +134,6 @@ commit_message = "chore(release): {version}"
 commit_parser = "conventional"
 major_on_zero = true
 allow_zero_version = true
-# The semantic-release action runs in its own Docker container without uv;
-# install it via the `build` extra, resync the lockfile after the version
-# bump, then build. $PACKAGE_NAME is injected by semantic-release.
 build_command = """
 python -m pip install -e '.[build]'
 uv lock --upgrade-package "$PACKAGE_NAME"
@@ -154,9 +149,6 @@ minor_tags = ["feat"]
 patch_tags = ["fix", "perf", "refactor"]
 other_allowed_tags = ["build", "chore", "ci", "docs", "style", "test"]
 default_bump_level = 0
-# Squash merges produce one commit per PR; keep them as a single release
-# entry (with the PR description as the narrative) instead of splitting the
-# body's `* commit` list into separate entries.
 parse_squash_commits = false
 ignore_merge_commits = true
 
