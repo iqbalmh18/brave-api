@@ -42,6 +42,11 @@ dependencies = [
 mcp = [
     "fastmcp>=3.4.3",
 ]
+build = [
+    # Pinned to the uv version that produced uv.lock, so the lockfile format
+    # stays compatible inside the semantic-release Docker container.
+    "uv~=0.11.31",
+]
 
 [project.scripts]
 brave-api-mcp = "brave_api.mcp.server:main"
@@ -131,7 +136,15 @@ commit_message = "chore(release): {version}"
 commit_parser = "conventional"
 major_on_zero = true
 allow_zero_version = true
-build_command = "uv build"
+# The semantic-release action runs in its own Docker container without uv;
+# install it via the `build` extra, resync the lockfile after the version
+# bump, then build. $PACKAGE_NAME is injected by semantic-release.
+build_command = """
+python -m pip install -e '.[build]'
+uv lock --upgrade-package "$PACKAGE_NAME"
+git add uv.lock
+uv build
+"""
 
 [tool.semantic_release.branches.main]
 match = "main"
