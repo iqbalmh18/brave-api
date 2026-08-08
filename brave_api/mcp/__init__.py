@@ -1,3 +1,1 @@
-from __future__ import annotations
-
-__all__: list[str] = []
+"""MCP server package. The implementation is in :mod:`brave_api.mcp.server`."""

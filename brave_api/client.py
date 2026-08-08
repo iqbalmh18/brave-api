@@ -1,49 +1,49 @@
+"""The public client facade."""
+
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, TypeVar
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
+from typing import TypeVar, cast
 from urllib.parse import quote_plus
 
-from ._crypto.keys import generate_symmetric_key
-from ._internal.config import ClientConfig
 from ._internal.constants import (
     DATA_QUERY_PARAM_NAME,
     DATA_QUERY_PARAM_VALUE,
     PATH_DATA_JSON,
-    PATH_HAS_CURRENT_STATE,
     PATH_NEW,
     PATH_PRIME,
+    PATH_RUN_TOOL,
     PATH_SEARCH,
     PATH_STREAM,
     PATH_STREAM_MULTIMODAL,
     PATH_SUGGEST,
 )
-from ._internal.models import (
-    ConversationResponse,
-    SearchResult,
-    SuggestItem,
-    TokenModel,
-)
-from ._internal.types import QueryType
-from ._search.parser import parse_search_html, parse_suggest_json
-from ._transport.http import HTTPClient
-from ._transport.retry import is_http_retryable, retry_async
-from ._internal.token_extractor import find_token
-from .conversation import Conversation
+from ._internal.crypto import generate_symmetric_key
+from ._internal.http import Transport
+from ._internal.retry import is_http_retryable, retry_async
+from ._internal.search_parser import parse_search_html, parse_suggest_json
+from ._internal.token import find_token
+from .config import ClientConfig
+from .conversation import Conversation, ImageInput
+from .enums import QueryType
 from .exceptions import (
     ConversationError,
     HTTPStatusError,
-    InvalidResponseError,
+    ResponseParseError,
     TransportError,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Awaitable, Callable
-
-    from ._internal.models import StreamEvent, StreamResult
+from .models import (
+    ConversationResponse,
+    SearchResult,
+    StreamEvent,
+    StreamResult,
+    SuggestItem,
+    SuggestResult,
+    TokenModel,
+)
 
 T = TypeVar("T")
 
@@ -51,234 +51,91 @@ logger = logging.getLogger("brave_api.client")
 
 
 class BraveClient:
-    def __init__(self, config: ClientConfig | None = None) -> None:
-        self._config: ClientConfig = config or ClientConfig()
-        self._http: HTTPClient = HTTPClient(self._config)
-        self._primed: bool = False
-        self._prime_lock: asyncio.Lock | None = None
+    """Async client for the Brave Ask & Search API.
 
-    async def _get_prime_lock(self) -> asyncio.Lock:
-        if self._prime_lock is None:
-            self._prime_lock = asyncio.Lock()
-        return self._prime_lock
+    Use it as an async context manager to guarantee the HTTP session is
+    opened and primed::
+
+        async with BraveClient() as client:
+            result = await client.ask("what is quantum computing?")
+    """
+
+    def __init__(
+        self,
+        config: ClientConfig | None = None,
+        *,
+        transport: Transport | None = None,
+    ) -> None:
+        """Create a client.
+
+        Args:
+            config: Client configuration; defaults to :class:`ClientConfig`.
+            transport: Optional custom transport. Intended for testing and
+                advanced embedding scenarios; the default transport is created
+                from *config*.
+        """
+        self._config = config or ClientConfig()
+        self._transport = transport or Transport(self._config)
+        self._primed = False
+        self._prime_lock = asyncio.Lock()
 
     @property
     def config(self) -> ClientConfig:
         return self._config
 
+    @property
+    def is_open(self) -> bool:
+        return self._transport.is_open
+
+    async def open(self) -> None:
+        """Open the HTTP session and prime it. Idempotent.
+
+        Called automatically by ``async with``; use it directly for manual
+        lifecycle management (paired with :meth:`close`).
+        """
+        try:
+            await self._transport.open()
+            await self._prime()
+        except BaseException:
+            await self._transport.close()
+            raise
+
     async def __aenter__(self) -> BraveClient:
-        await self._http.__aenter__()
-        await self._prime()
+        await self.open()
         return self
 
     async def __aexit__(self, *_: object) -> None:
-        await self._http.close()
+        await self.close()
 
     async def close(self) -> None:
-        await self._http.close()
+        """Close the underlying HTTP session. Idempotent."""
+        await self._transport.close()
 
     async def health_check(self) -> bool:
+        """Return True when the base URL responds successfully."""
         try:
-            await self._http.request("GET", self._config.base_url)
+            await self._transport.request("GET", self._config.base_url)
             return True
         except Exception:
             return False
-
-    async def _retry(
-        self,
-        operation: Callable[[], Awaitable[T]],
-        operation_name: str,
-    ) -> T:
-        return await self._http._with_rate_limit(lambda: retry_async(
-            operation,
-            operation_name=operation_name,
-            max_attempts=self._config.max_retries,
-            backoff_seconds=self._config.retry_backoff_seconds,
-            jitter_min=self._config.retry_jitter_min,
-            jitter_max=self._config.retry_jitter_max,
-            is_retryable=is_http_retryable,
-        ))
-
-    async def _prime(self) -> None:
-        if self._primed:
-            return
-        lock = await self._get_prime_lock()
-        async with lock:
-            if self._primed:
-                return
-            url = f"{self._config.base_url}{PATH_PRIME}"
-            try:
-                await self._retry(lambda: self._do_prime(url), "prime")
-            except HTTPStatusError:
-                raise
-            except Exception as exc:
-                raise TransportError(f"Failed to get prime session: {exc}") from exc
-            self._primed = True
-
-    async def _do_prime(self, url: str) -> None:
-        response = await self._http.request("GET", url)
-        if response.status_code >= 400:
-            raise TransportError(f"Prime failed: HTTP {response.status_code}")
-
-    async def fetch_token(self, query: str) -> TokenModel:
-        url = f"{self._config.base_url}{PATH_DATA_JSON}"
-        params = {"q": query, DATA_QUERY_PARAM_NAME: DATA_QUERY_PARAM_VALUE}
-        headers = self._http.build_headers(
-            referer_suffix=f"{PATH_PRIME}?q={quote_plus(query)}",
-            accept="*/*",
-            extra={"sec-fetch-mode": "cors", "sec-fetch-site": "same-origin"},
-        )
-        return await self._retry(
-            lambda: self._do_fetch_token(url, params, headers),
-            "fetch_token",
-        )
-
-    async def _do_fetch_token(self, url: str, params: dict, headers: dict) -> TokenModel:
-        payload = await self._http.get_json(url, params=params, headers=headers)
-        return find_token(payload)
-
-    async def open_conversation(
-        self,
-        token: TokenModel,
-        symmetric_key: str | None = None,
-    ) -> ConversationResponse:
-        key = symmetric_key or generate_symmetric_key()
-        url = f"{self._config.base_url}{PATH_NEW}"
-        params = self._new_params(token=token, symmetric_key=key)
-        headers = self._http.build_cors_headers(accept="application/json")
-        return await self._retry(
-            lambda: self._do_open_conversation(url, params, headers, key),
-            "open_conversation",
-        )
-
-    async def _do_open_conversation(
-        self, url: str, params: dict, headers: dict, key: str
-    ) -> ConversationResponse:
-        payload = await self._http.get_json(url, params=params, headers=headers)
-        conversation_id = payload.get("id")
-        if not isinstance(conversation_id, str) or not conversation_id:
-            raise ConversationError(f"Response /new missing id: {payload!r}")
-        return ConversationResponse(
-            id=conversation_id,
-            symmetric_key=key,
-            bo_callback_share_link=payload.get("bo_callback_share_link"),
-            bo_callback_open_modal=payload.get("bo_callback_open_modal"),
-        )
-
-    async def refresh_conversation_data(
-        self,
-        *,
-        query: str,
-        conversation_id: str,
-    ) -> dict[str, object]:
-        url = f"{self._config.base_url}{PATH_DATA_JSON}"
-        params = {
-            "q": query,
-            "conversation": conversation_id,
-            DATA_QUERY_PARAM_NAME: DATA_QUERY_PARAM_VALUE,
-        }
-        headers = self._http.build_headers(
-            referer_suffix=f"{PATH_PRIME}?q={quote_plus(query)}",
-            accept="*/*",
-        )
-        return await self._http.get_json(url, params=params, headers=headers)
-
-    async def _stream_raw(
-        self,
-        *,
-        conversation_id: str,
-        query: str,
-        symmetric_key: str,
-        query_type: str,
-        quote: str | None,
-        context: str | None,
-        enable_inline_entities: bool,
-        language: str | None = None,
-        ui_lang: str | None = None,
-    ) -> AsyncGenerator[str | bytes, None]:
-        url = f"{self._config.base_url}{PATH_STREAM}"
-        params = self._stream_params(
-            conversation_id=conversation_id,
-            query=query,
-            symmetric_key=symmetric_key,
-            query_type=query_type,
-            quote=quote,
-            context=context,
-            enable_inline_entities=enable_inline_entities,
-            language=language,
-            ui_lang=ui_lang,
-        )
-        headers = self._http.build_cors_headers(accept="application/json")
-        async for line in self._http.stream(url, params=params, headers=headers):
-            yield line
-
-    async def _stream_raw_multimodal(
-        self,
-        *,
-        conversation_id: str,
-        query: str,
-        symmetric_key: str,
-        image_bytes: bytes,
-        image_filename: str = "image.jpg",
-        image_mime: str = "image/jpeg",
-        thumbnail_bytes: bytes | None = None,
-        thumbnail_filename: str = "thumbnail.jpg",
-        thumbnail_mime: str = "image/jpeg",
-        query_type: str = "regular",
-        quote: str | None = None,
-        context: str | None = None,
-        enable_inline_entities: bool = True,
-        language: str | None = None,
-        ui_lang: str | None = None,
-    ) -> AsyncGenerator[str | bytes, None]:
-        url = f"{self._config.base_url}{PATH_STREAM_MULTIMODAL}"
-        params = self._stream_params(
-            conversation_id=conversation_id,
-            query=query,
-            symmetric_key=symmetric_key,
-            query_type=query_type,
-            quote=quote,
-            context=context,
-            enable_inline_entities=enable_inline_entities,
-            language=language,
-            ui_lang=ui_lang,
-        )
-        headers = self._http.build_cors_headers(
-            referer_suffix=f"{PATH_PRIME}?q={quote_plus(query)}&conversation={conversation_id}",
-            accept="application/json",
-        )
-        headers["origin"] = self._config.base_url
-        files = {"image_file": (image_filename, image_bytes, image_mime)}
-        if thumbnail_bytes is not None:
-            files["thumbnail_file"] = (
-                thumbnail_filename,
-                thumbnail_bytes,
-                thumbnail_mime,
-            )
-        async for line in self._http.stream_multipart(
-            url, params=params, headers=headers, files=files
-        ):
-            yield line
 
     async def ask(
         self,
         query: str,
         *,
-        image: bytes | str | Path | None = None,
-        image_filename: str = "image.jpg",
-        image_mime: str = "image/jpeg",
+        image: ImageInput | None = None,
         language: str | None = None,
         ui_lang: str | None = None,
         query_type: QueryType = QueryType.REGULAR,
         quote: str | None = None,
         context: str | None = None,
         auto_tools: bool = True,
+        store_raw_events: bool = True,
     ) -> StreamResult:
-        conv = await self.conversation(
+        """Ask a question and return the fully accumulated :class:`StreamResult`."""
+        conversation = await self.conversation(
             query,
             image=image,
-            image_filename=image_filename,
-            image_mime=image_mime,
             language=language,
             ui_lang=ui_lang,
             query_type=query_type,
@@ -286,15 +143,13 @@ class BraveClient:
             context=context,
             auto_tools=auto_tools,
         )
-        return await conv.collect()
+        return await conversation.collect(store_raw_events=store_raw_events)
 
     async def ask_stream(
         self,
         query: str,
         *,
-        image: bytes | str | Path | None = None,
-        image_filename: str = "image.jpg",
-        image_mime: str = "image/jpeg",
+        image: ImageInput | None = None,
         language: str | None = None,
         ui_lang: str | None = None,
         query_type: QueryType = QueryType.REGULAR,
@@ -302,11 +157,10 @@ class BraveClient:
         context: str | None = None,
         auto_tools: bool = True,
     ) -> AsyncGenerator[StreamEvent, None]:
-        conv = await self.conversation(
+        """Stream :class:`StreamEvent` objects for a question in real time."""
+        conversation = await self.conversation(
             query,
             image=image,
-            image_filename=image_filename,
-            image_mime=image_mime,
             language=language,
             ui_lang=ui_lang,
             query_type=query_type,
@@ -314,7 +168,7 @@ class BraveClient:
             context=context,
             auto_tools=auto_tools,
         )
-        async for event in conv.stream_events():
+        async for event in conversation.stream_events():
             yield event
 
     async def search(
@@ -325,15 +179,16 @@ class BraveClient:
         spellcheck: bool = True,
         source: str = "web",
     ) -> SearchResult:
+        """Search the Brave SERP and return structured :class:`SearchResult`."""
         url = f"{self._config.base_url}{PATH_SEARCH}"
         params: dict[str, str] = {"q": query, "source": source}
         if offset > 0:
             params["offset"] = str(offset)
         if not spellcheck:
             params["spellcheck"] = "0"
-        headers = self._http.build_headers(
+        headers = self._transport.build_headers(
             referer_suffix=PATH_PRIME,
-            accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            accept=("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
             extra={
                 "sec-fetch-dest": "document",
                 "sec-fetch-mode": "navigate",
@@ -346,19 +201,14 @@ class BraveClient:
             "search",
         )
 
-    async def _do_search(
-        self, url: str, params: dict, headers: dict, query: str, offset: int
-    ) -> SearchResult:
-        response = await self._http.request("GET", url, params=params, headers=headers)
-        return parse_search_html(response.text, query=query, offset=offset)
-
     async def suggest(
         self,
         query: str,
         *,
         rich: bool = True,
         source: str = "web",
-    ) -> list[SuggestItem]:
+    ) -> SuggestResult:
+        """Fetch autocomplete suggestions for a partial query."""
         url = f"{self._config.base_url}{PATH_SUGGEST}"
         params = {
             "q": query,
@@ -366,7 +216,7 @@ class BraveClient:
             "source": source,
             "country": self._config.country,
         }
-        headers = self._http.build_headers(
+        headers = self._transport.build_headers(
             referer_suffix="/",
             accept="*/*",
             extra={
@@ -375,29 +225,215 @@ class BraveClient:
                 "sec-fetch-site": "same-origin",
             },
         )
-        return await self._retry(
-            lambda: self._do_suggest(url, params, headers, query),
+        items = await self._retry(
+            lambda: self._do_suggest(url, params, headers),
             "suggest",
         )
+        return SuggestResult(query=query, suggestions=items)
 
-    async def _do_suggest(
-        self, url: str, params: dict, headers: dict, query: str
-    ) -> list[SuggestItem]:
-        try:
-            data = await self._http.get_json(url, params=params, headers=headers)
-        except InvalidResponseError:
-            response = await self._http.request("GET", url, params=params, headers=headers)
-            data = json.loads(response.text)
-        return parse_suggest_json(data, query=query)
+    async def conversation(
+        self,
+        query: str,
+        *,
+        conversation_id: str | None = None,
+        symmetric_key: str | None = None,
+        image: ImageInput | None = None,
+        language: str | None = None,
+        ui_lang: str | None = None,
+        query_type: QueryType = QueryType.REGULAR,
+        quote: str | None = None,
+        context: str | None = None,
+        auto_tools: bool = True,
+    ) -> Conversation:
+        """Create a new conversation or resume an existing one.
+
+        Resuming requires *conversation_id* and *symmetric_key* together.
+        """
+        if (conversation_id is None) != (symmetric_key is None):
+            raise ValueError("conversation_id and symmetric_key must be provided together")
+
+        conversation = Conversation(
+            self,
+            query,
+            query_type=query_type,
+            quote=quote,
+            context=context,
+            auto_tools=auto_tools,
+        )
+        if conversation_id is not None and symmetric_key is not None:
+            conversation.resume(conversation_id, symmetric_key)
+
+        if image is not None:
+            await conversation.attach_image(image)
+        if language is not None:
+            conversation.set_language(language, ui_lang)
+
+        if not conversation.is_open:
+            await conversation.open()
+        return conversation
+
+    async def _retry(self, operation: Callable[[], Awaitable[T]], operation_name: str) -> T:
+        cfg = self._config
+        return await retry_async(
+            operation,
+            operation_name=operation_name,
+            max_attempts=cfg.max_retries,
+            backoff_seconds=cfg.retry_backoff,
+            jitter=cfg.retry_jitter,
+            is_retryable=is_http_retryable,
+        )
+
+    async def _prime(self) -> None:
+        if self._primed:
+            return
+        async with self._prime_lock:
+            if self._primed:
+                return
+            try:
+                await self._retry(self._do_prime, "prime")
+            except HTTPStatusError:
+                raise
+            except Exception as exc:
+                raise TransportError(f"Failed to prime session: {exc}") from exc
+            self._primed = True
+
+    async def _do_prime(self) -> None:
+        await self._transport.request("GET", f"{self._config.base_url}{PATH_PRIME}")
+
+    async def _fetch_token(self, query: str) -> TokenModel:
+        url = f"{self._config.base_url}{PATH_DATA_JSON}"
+        params = {"q": query, DATA_QUERY_PARAM_NAME: DATA_QUERY_PARAM_VALUE}
+        headers = self._transport.build_headers(
+            referer_suffix=f"{PATH_PRIME}?q={quote_plus(query)}",
+            accept="*/*",
+            extra={"sec-fetch-mode": "cors", "sec-fetch-site": "same-origin"},
+        )
+        return await self._retry(
+            lambda: self._do_fetch_token(url, params, headers),
+            "fetch_token",
+        )
+
+    async def _do_fetch_token(
+        self, url: str, params: dict[str, str], headers: dict[str, str]
+    ) -> TokenModel:
+        payload = await self._transport.get_json(url, params=params, headers=headers)
+        return find_token(payload)
+
+    async def _open_conversation(
+        self, token: TokenModel, symmetric_key: str | None = None
+    ) -> ConversationResponse:
+        key = symmetric_key or generate_symmetric_key()
+        url = f"{self._config.base_url}{PATH_NEW}"
+        params = self._new_params(token=token, symmetric_key=key)
+        headers = self._transport.build_cors_headers(accept="application/json")
+        return await self._retry(
+            lambda: self._do_open_conversation(url, params, headers, key),
+            "open_conversation",
+        )
+
+    async def _do_open_conversation(
+        self,
+        url: str,
+        params: dict[str, str],
+        headers: dict[str, str],
+        key: str,
+    ) -> ConversationResponse:
+        payload = await self._transport.get_json(url, params=params, headers=headers)
+        conversation_id = payload.get("id")
+        if not isinstance(conversation_id, str) or not conversation_id:
+            raise ConversationError(f"Response /new missing id: {payload!r}")
+        return ConversationResponse(
+            id=conversation_id,
+            symmetric_key=key,
+            bo_callback_share_link=payload.get("bo_callback_share_link"),
+            bo_callback_open_modal=payload.get("bo_callback_open_modal"),
+        )
+
+    async def _stream_raw(
+        self,
+        *,
+        conversation_id: str,
+        query: str,
+        symmetric_key: str,
+        query_type: QueryType,
+        quote: str | None,
+        context: str | None,
+        enable_inline_entities: bool,
+        language: str,
+        ui_lang: str | None,
+    ) -> AsyncIterator[str | bytes]:
+        url = f"{self._config.base_url}{PATH_STREAM}"
+        params = self._stream_params(
+            conversation_id=conversation_id,
+            query=query,
+            symmetric_key=symmetric_key,
+            query_type=query_type,
+            quote=quote,
+            context=context,
+            enable_inline_entities=enable_inline_entities,
+            language=language,
+            ui_lang=ui_lang,
+        )
+        headers = self._transport.build_cors_headers(accept="application/json")
+        async for line in self._transport.stream(url, params=params, headers=headers):
+            yield line
+
+    async def _stream_raw_multimodal(
+        self,
+        *,
+        conversation_id: str,
+        query: str,
+        symmetric_key: str,
+        image_bytes: bytes,
+        image_filename: str,
+        image_mime: str,
+        thumbnail_bytes: bytes | None,
+        thumbnail_filename: str,
+        thumbnail_mime: str,
+        query_type: QueryType,
+        quote: str | None,
+        context: str | None,
+        enable_inline_entities: bool,
+        language: str,
+        ui_lang: str | None,
+    ) -> AsyncIterator[str | bytes]:
+        url = f"{self._config.base_url}{PATH_STREAM_MULTIMODAL}"
+        params = self._stream_params(
+            conversation_id=conversation_id,
+            query=query,
+            symmetric_key=symmetric_key,
+            query_type=query_type,
+            quote=quote,
+            context=context,
+            enable_inline_entities=enable_inline_entities,
+            language=language,
+            ui_lang=ui_lang,
+        )
+        headers = self._transport.build_cors_headers(
+            referer_suffix=(f"{PATH_PRIME}?q={quote_plus(query)}&conversation={conversation_id}"),
+            accept="application/json",
+        )
+        headers["origin"] = self._config.base_url
+        files: dict[str, tuple[str, bytes, str]] = {
+            "image_file": (image_filename, image_bytes, image_mime)
+        }
+        if thumbnail_bytes is not None:
+            files["thumbnail_file"] = (
+                thumbnail_filename,
+                thumbnail_bytes,
+                thumbnail_mime,
+            )
+        async for line in self._transport.stream_multipart(
+            url, params=params, headers=headers, files=files
+        ):
+            yield line
 
     async def _run_tool(
-        self,
-        tool_use_event: dict[str, object],
-        symmetric_key: str,
+        self, tool_use_event: dict[str, object], symmetric_key: str
     ) -> dict[str, object]:
-        url = f"{self._config.base_url}/api/tap/v1/run_tool"
+        url = f"{self._config.base_url}{PATH_RUN_TOOL}"
         params = {"symmetric_key": symmetric_key}
-        headers = self._http.build_cors_headers(accept="application/json")
+        headers = self._transport.build_cors_headers(accept="application/json")
         headers["content-type"] = "application/json"
         headers["origin"] = self._config.base_url
         return await self._retry(
@@ -406,81 +442,51 @@ class BraveClient:
         )
 
     async def _do_run_tool(
-        self, url: str, params: dict, headers: dict, tool_use_event: dict
+        self,
+        url: str,
+        params: dict[str, str],
+        headers: dict[str, str],
+        tool_use_event: dict[str, object],
     ) -> dict[str, object]:
-        response = await self._http.request(
-            "POST", url, params=params, headers=headers, json_body=tool_use_event
+        response = await self._transport.request(
+            "POST", url, params=params, headers=headers, json=tool_use_event
         )
         try:
-            data = response.json()
-        except Exception as exc:
-            raise TransportError(f"Response from run_tool is not JSON: {exc}") from exc
+            data = json.loads(response.content)
+        except json.JSONDecodeError as exc:
+            raise ResponseParseError(f"Response from run_tool is not JSON: {exc}") from exc
         if isinstance(data, list) and data and isinstance(data[0], dict):
-            return data[0]
+            return cast(dict[str, object], data[0])
         if isinstance(data, dict):
-            return data
+            return cast(dict[str, object], data)
         return {"raw": data}
 
-    async def _has_current_state(self, conversation_ids: list[str]) -> dict[str, bool]:
-        url = f"{self._config.base_url}{PATH_HAS_CURRENT_STATE}"
-        headers = self._http.build_cors_headers(accept="application/json")
-        headers["content-type"] = "application/json"
-        headers["origin"] = self._config.base_url
-        return await self._retry(
-            lambda: self._do_has_current_state(url, headers, conversation_ids),
-            "has_current_state",
-        )
-
-    async def _do_has_current_state(
-        self, url: str, headers: dict, conversation_ids: list[str]
-    ) -> dict[str, bool]:
-        payload = await self._http.get_json(
-            url, headers=headers, json_body={"ids": conversation_ids}
-        )
-        if not isinstance(payload, dict):
-            return {}
-        return {key: bool(value) for key, value in payload.items()}
-
-    async def conversation(
+    async def _do_search(
         self,
+        url: str,
+        params: dict[str, str],
+        headers: dict[str, str],
         query: str,
-        *,
-        conversation_id: str | None = None,
-        symmetric_key: str | None = None,
-        image: bytes | str | Path | None = None,
-        image_filename: str = "image.jpg",
-        image_mime: str = "image/jpeg",
-        language: str | None = None,
-        ui_lang: str | None = None,
-        query_type: QueryType = QueryType.REGULAR,
-        quote: str | None = None,
-        context: str | None = None,
-        auto_tools: bool = True,
-    ) -> Conversation:
+        offset: int,
+    ) -> SearchResult:
+        response = await self._transport.request("GET", url, params=params, headers=headers)
+        return parse_search_html(response.text, query=query, offset=offset)
 
-        conversation_obj = Conversation(
-            self,
-            query,
-            query_type=query_type,
-            quote=quote,
-            context=context,
-            auto_tools=auto_tools,
-        )
-
-        if conversation_id and symmetric_key:
-            conversation_obj._id = conversation_id
-            conversation_obj._symmetric_key = symmetric_key
-
-        if image is not None:
-            await conversation_obj.attach_image(image, filename=image_filename, mime=image_mime)
-
-        if language is not None:
-            conversation_obj.set_language(language, ui_lang)
-
-        if not conversation_obj.is_open:
-            await conversation_obj.open()
-
-        return conversation_obj
+    async def _do_suggest(
+        self,
+        url: str,
+        params: dict[str, str],
+        headers: dict[str, str],
+    ) -> list[SuggestItem]:
+        try:
+            data = await self._transport.get_json(url, params=params, headers=headers)
+        except ResponseParseError:
+            response = await self._transport.request("GET", url, params=params, headers=headers)
+            try:
+                data = json.loads(response.text)
+            except json.JSONDecodeError as exc:
+                raise ResponseParseError(f"Suggest response is not valid JSON: {exc}") from exc
+        return parse_suggest_json(data, query=str(params["q"]))
 
     def _new_params(self, token: TokenModel, symmetric_key: str) -> dict[str, str]:
         cfg = self._config
@@ -508,16 +514,16 @@ class BraveClient:
         conversation_id: str,
         query: str,
         symmetric_key: str,
-        query_type: str,
+        query_type: QueryType,
         quote: str | None,
         context: str | None,
         enable_inline_entities: bool,
-        language: str | None = None,
-        ui_lang: str | None = None,
+        language: str,
+        ui_lang: str | None,
     ) -> dict[str, str]:
         cfg = self._config
         params: dict[str, str] = {
-            "language": language or cfg.language,
+            "language": language,
             "country": cfg.country,
             "ui_lang": ui_lang or cfg.ui_lang,
             "safesearch": cfg.safesearch,
@@ -531,7 +537,7 @@ class BraveClient:
             "symmetric_key": symmetric_key,
             "enable_inline_entities": "true" if enable_inline_entities else "false",
         }
-        if query_type and query_type is not QueryType.REGULAR:
+        if query_type is not QueryType.REGULAR:
             params["query_type"] = str(query_type)
         if quote:
             params["quote"] = quote
