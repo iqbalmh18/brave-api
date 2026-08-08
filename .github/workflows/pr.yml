@@ -1,0 +1,38 @@
+name: PR Title Validation
+
+# Uses `pull_request` (not `pull_request_target`) so the workflow is taken
+# from the PR branch and therefore also runs on the very first PR — `main`
+# does not have this workflow yet. The action only reads the PR title via the
+# API, so no PR code is executed.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Conventional Commit Title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            build
+            chore
+            ci
+            docs
+            style
+            test
+          # scopes are optional: `feat(transport): ...` and `feat: ...` both pass
+          requireScope: false
+          ignoreLabels: |
+            dependencies

@@ -3,6 +3,21 @@
 <img src="./brave-api.svg" alt="Brave API banner" />
 
 <p align="center">
+  <a href="https://pypi.org/project/brave-api-python/">
+    <img src="https://img.shields.io/pypi/v/brave-api-python.svg" alt="PyPI version" />
+  </a>
+  <a href="https://pypi.org/project/brave-api-python/">
+    <img src="https://img.shields.io/pypi/pyversions/brave-api-python.svg" alt="Python versions" />
+  </a>
+  <a href="https://github.com/iqbalmh18/brave-api/actions/workflows/ci.yml">
+    <img src="https://github.com/iqbalmh18/brave-api/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  </a>
+  <a href="https://python-semantic-release.readthedocs.io/">
+    <img src="https://img.shields.io/badge/semantic--release-enabled-2a86ba" alt="Semantic release" />
+  </a>
+</p>
+
+<p align="center">
 An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
 </p>
 
@@ -71,7 +86,7 @@ graph TD
     C[MCP Client<br/>Claude Desktop / Claude Code / other] -->|stdio| D[Brave API MCP Server]
     G[OpenAI-compatible Client<br/>or remote agent] -->|HTTP / SSE| D
     D -->|ask / search / suggest| B
-    B --> E[HTTPClient<br/>curl_cffi]
+    B --> E[Transport<br/>curl_cffi]
     E --> F[Brave Search / Brave AI]
 
     style B fill:#2b2b2b,stroke:#888,color:#fff
@@ -97,12 +112,12 @@ The library can be used directly in Python code, or indirectly through the MCP s
 uv pip install brave-api-python
 ```
 
-From source:
+From source (requires [uv](https://docs.astral.sh/uv/)):
 
 ```bash
 git clone https://github.com/iqbalmh18/brave-api
 cd brave-api
-uv pip install -e ".[dev]"
+uv sync --group dev
 ```
 
 With MCP server support:
@@ -119,15 +134,15 @@ uv pip install "brave-api-python[mcp]"
 import asyncio
 from brave_api import BraveClient
 
-async def main():
+async def main() -> None:
     async with BraveClient() as client:
         # AI answer
         result = await client.ask("what is quantum computing?")
         print(result.text)
 
         # Web search
-        search = await client.search("python asyncio tutorial")
-        for item in search.web:
+        search_result = await client.search("python asyncio tutorial")
+        for item in search_result.web:
             print(item.title, item.url)
 
 asyncio.run(main())
@@ -175,14 +190,17 @@ result = await client.ask("what is in this image?", image=Path("photo.jpg"))
 ### ask_stream() — real-time streaming
 
 ```python
-async for event in client.ask_stream("what is Space X?"):
-    if event.type is StreamEventType.TEXT_DELTA:
-        print(event.delta, end="", flush=True)
-    elif event.type is StreamEventType.TEXT_STOP:
-        print()
-    elif event.type is StreamEventType.FOLLOWUPS:
-        for q in event.payload.get("followups", []):
-            print(f"-> {q}")
+from brave_api import BraveClient, StreamEventType
+
+async with BraveClient() as client:
+    async for event in client.ask_stream("what is SpaceX?"):
+        if event.type is StreamEventType.TEXT_DELTA:
+            print(event.delta, end="", flush=True)
+        elif event.type is StreamEventType.TEXT_STOP:
+            print()
+        elif event.type is StreamEventType.FOLLOWUPS:
+            for q in event.payload.get("followups", []):
+                print(f"- {q}")
 ```
 
 ### Comparison
@@ -241,12 +259,14 @@ result = await client.search("pyton tutorial", spellcheck=False)
 ### suggest() — autocomplete
 
 ```python
-suggestions = await client.suggest("elon")
-for s in suggestions:
+result = await client.suggest("elon")
+for s in result.suggestions:
     print(s.text, s.entity_type, s.is_entity)
     if s.thumbnail:
         print(s.thumbnail)
 ```
+
+`suggest()` returns a `SuggestResult` with `query` and `suggestions` fields.
 
 ---
 
@@ -272,12 +292,14 @@ config = ClientConfig(
     enable_research=False,           # True = deep research mode
 
     # HTTP
-    request_timeout_seconds=60.0,
-    max_retries=3,
-    retry_backoff_seconds=1.5,
+    timeout=60.0,           # per-request timeout (seconds)
+    stream_timeout=None,    # streaming timeout (None = unlimited)
+    max_retries=3,          # retries on transient failures
+    retry_backoff=1.5,      # base backoff in seconds (grows exponentially)
+    retry_jitter=True,      # add random 0.5x-1.5x jitter to backoff
 
     # Optional proxy pool
-    proxy_list=[
+    proxies=[
         "http://user:password@proxy-1.example:8080",
         "socks5://proxy-2.example:1080",
     ],
@@ -295,13 +317,13 @@ async with BraveClient(config) as client:
 
 ## Proxy Support
 
-Pass proxy URLs through `ClientConfig(proxy_list=...)` to rotate proxy usage across requests. The pool is shared by Ask, Search, Suggest, and streaming requests.
+Pass proxy URLs through `ClientConfig(proxies=...)` to rotate proxy usage across requests. The pool is shared by Ask, Search, Suggest, and streaming requests.
 
 ```python
 from brave_api import BraveClient, ClientConfig
 
 config = ClientConfig(
-    proxy_list=[
+    proxies=[
         "http://user:password@proxy-1.example:8080",
         "http://proxy-2.example:8080",
         "socks5://proxy-3.example:1080",
@@ -327,7 +349,11 @@ logging.basicConfig(
 )
 ```
 
-See [`examples/proxy-usage.py`](examples/proxy-usage.py) for a runnable example that reads comma-separated proxy URLs from `BRAVE_PROXY_LIST`.
+Proxy URLs are rotated in round-robin order; failed proxies are quarantined
+for the lifetime of the client, and the client falls back to a direct
+connection when all proxies fail. See [`examples/configuration.py`](examples/configuration.py)
+for a runnable example that reads comma-separated proxy URLs from
+`BRAVE_PROXY_LIST`.
 
 ---
 
@@ -357,7 +383,8 @@ Key `conversation()` parameters:
 | `symmetric_key` | `str \| None` | Required when `conversation_id` is set |
 | `image` | `bytes \| str \| Path \| None` | Image for multimodal input |
 | `language` | `str \| None` | Override response language |
-| `query_type` | `str` | See `QueryType` enum |
+| `ui_lang` | `str \| None` | Override UI language |
+| `query_type` | `QueryType` | `REGULAR`, `REGENERATE_ANSWER`, etc. |
 | `auto_tools` | `bool` | Auto-execute tool calls (default: `True`) |
 | `context` | `str \| None` | Article/passage context |
 | `quote` | `str \| None` | Highlighted text span |
@@ -419,22 +446,25 @@ sequenceDiagram
 result = await conv.collect()
 
 result.text            # str - full AI answer (markdown)
-result.thinking         # str - chain-of-thought reasoning (if any)
-result.urls             # list[str] - unique URLs found
-result.images           # list[ImageResult]
-result.videos           # list[VideoResult]
-result.web_results      # list[WebResult]
-result.infobox          # Infobox | None
-result.followups        # list[str]
-result.citations        # list[dict] - raw tool result payloads
-result.inline_entities  # list[dict]
-result.raw_events       # list[StreamEvent] - every event for debugging
-result.state            # StreamState enum
-result.is_complete      # bool
-result.has_images       # bool
-result.has_videos       # bool
-result.has_infobox      # bool
-result.has_tool_calls   # bool
+result.thinking        # str - chain-of-thought reasoning (if any)
+result.urls            # list[str] - unique URLs found
+result.images          # list[ImageResult]
+result.videos          # list[VideoResult]
+result.web_results     # list[WebResult]
+result.infobox         # Infobox | None
+result.followups       # list[str]
+result.citations       # list[dict] - raw tool result payloads
+result.tool_uses       # list[dict] - tool calls executed
+result.table_of_contents  # list[dict] - section headings (if any)
+result.usage           # dict - token usage statistics (if reported)
+result.inline_entities # list[dict]
+result.raw_events      # list[StreamEvent] - every event for debugging
+result.state           # StreamState enum
+result.is_complete     # bool
+result.has_images      # bool
+result.has_videos      # bool
+result.has_infobox     # bool
+result.has_tool_calls  # bool
 ```
 
 ---
@@ -447,11 +477,11 @@ All exceptions inherit from `BraveAPIError`.
 BraveAPIError
 ├── TransportError          network error, timeout, connection reset
 ├── HTTPStatusError         non-2xx HTTP response (.status_code, .response_text)
+├── ResponseParseError      response was not valid JSON or had an unexpected shape
 ├── TokenExtractionError    could not parse auth token from server HTML
 ├── ConversationError       /api/tap/v1/new did not return a conversation id
 ├── StreamAbortedError      server sent an error event mid-stream
-├── ChallengeRequiredError  server sent a CAPTCHA challenge
-└── InvalidResponseError    response was not valid JSON or unexpected shape
+└── ChallengeRequiredError  server sent a CAPTCHA challenge
 ```
 
 ```python
@@ -475,7 +505,10 @@ except BraveAPIError as e:
     print(f"Error: {e}")
 ```
 
-Retry strategy: HTTP 429 and 5xx responses are retried with exponential backoff (`backoff_seconds * 2^attempt`).
+Retry strategy: HTTP 429 and retryable 5xx responses (501 and 505 are not
+retried) are retried with exponential backoff. The delay before retry *n* is
+`backoff_seconds * 2^(n - 1)` seconds, optionally multiplied by a random
+0.5x-1.5x jitter factor.
 
 The MCP server reuses this same hierarchy: any `BraveAPIError` raised by the client is caught and surfaced to the calling MCP client as a `ToolError`, so agents receive a clean, descriptive message instead of a raw stack trace.
 
@@ -576,8 +609,10 @@ All server behavior is controlled through environment variables — no code chan
 | `BRAVE_SAFESEARCH` | library default | `off`, `moderate`, or `strict` |
 | `BRAVE_ENABLE_RESEARCH` | `false` | `true`/`false`/`1`/`0`/`yes`/`no` — enables deep research mode |
 | `BRAVE_REQUEST_TIMEOUT` | library default | Request timeout in seconds |
+| `BRAVE_STREAM_TIMEOUT` | unlimited | Streaming timeout in seconds |
 | `BRAVE_MAX_RETRIES` | library default | Maximum retry attempts on transient failures |
 | `BRAVE_MAX_CONCURRENT` | library default | Maximum concurrent requests |
+| `BRAVE_PROXY_LIST` | none | Comma-separated proxy URLs for rotation |
 
 Invalid numeric or boolean values fall back to their defaults, with a warning logged rather than raising an error at startup.
 
@@ -589,29 +624,37 @@ Every tool call is wrapped so that any `BraveAPIError` raised by the underlying 
 
 ## Examples
 
-| File | Description |
+The `examples/` directory contains curated, self-contained scripts that hit
+the live API. Each demonstrates one feature, documented in
+[`examples/README.md`](examples/README.md).
+
+| File | Demonstrates |
 |---|---|
-| `examples/quick_start.py` | Simplest usage - ask and print |
-| `examples/stream_events.py` | Real-time token streaming |
-| `examples/web_results_and_urls.py` | Web results, thumbnails, URLs |
-| `examples/images_and_videos.py` | Image and video results |
-| `examples/multi_turn_conversation.py` | Multi-turn + answer regeneration |
-| `examples/client_config.py` | All ClientConfig options |
-| `examples/language_override.py` | Auto-detect vs explicit language |
-| `examples/multimodal_image_input.py` | Vision - attach image to query |
-| `examples/context_and_quote.py` | Context and quote parameters |
-| `examples/auto_tools_control.py` | auto_tools=True vs False |
-| `examples/exception_handling.py` | All exception types + stream state |
-| `examples/inline_entities_and_citations.py` | Inline entities and tool citations |
-| `examples/context_manager_vs_manual.py` | Client lifecycle patterns |
-| `examples/raw_events_inspection.py` | Inspect every raw event |
-| `examples/thinking_mode.py` | Chain-of-thought reasoning |
-| `examples/interactive_chat.py` | Terminal REPL chat |
-| `examples/ask_method.py` | ask() and ask_stream() demos |
-| `examples/search_method.py` | search() and suggest() |
-| `examples/proxy-usage.py` | Proxy pool rotation, fallback, and transport logging |
+| `examples/quickstart.py` | Minimal ask and result inspection |
+| `examples/streaming.py` | Real-time event streaming (text, thinking, tools) |
+| `examples/search_suggest.py` | Web search with pagination + autocomplete |
+| `examples/multi_turn.py` | Resume, follow-up, and regenerate answers |
+| `examples/rich_results.py` | Images, videos, infobox, and follow-ups |
+| `examples/multimodal.py` | Vision mode: attach an image to a query |
+| `examples/configuration.py` | Config: language, safety, timeouts, proxies |
+| `examples/errors.py` | The full exception hierarchy |
+| `examples/lifecycle.py` | Manual `open()` / `close()` lifecycle |
+| `examples/concurrency.py` | Parallel queries with one shared client |
+| `examples/mcp_server.py` | The built-in MCP server |
+| `examples/chat_repl.py` | Interactive terminal chat |
 
 ---
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, quality
+gates, commit conventions, and the automated release workflow.
+
+Releases are generated from Conventional Commits by
+[python-semantic-release](https://python-semantic-release.readthedocs.io/):
+pushing to `main` runs CI and, when there are release-worthy commits,
+creates a tagged GitHub Release with the built distributions attached.
+Publishing to PyPI uses trusted publishing (OIDC) and requires no API tokens.
 
 ## License
 

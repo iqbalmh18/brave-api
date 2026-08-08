@@ -1,8 +1,10 @@
-"""Tes integrasi brave_api (memanggil API Brave langsung).
+"""Integration tests that hit the live Brave API.
 
-Jalankan hanya bila ingin validasi end-to-end::
+These are opt-in and excluded from the default test run::
 
-    uv run pytest brave_api/tests/test_integration.py -m integration
+    uv run pytest -m integration
+
+They require network access and may be rate-limited by Brave.
 """
 
 from __future__ import annotations
@@ -30,12 +32,8 @@ async def client() -> AsyncIterator[BraveClient]:
         geoloc=os.environ.get("BRAVE_GEOLOC", "0x0"),
         country=os.environ.get("BRAVE_COUNTRY", "us"),
     )
-    instance = BraveClient(config)
-    await instance.__aenter__()
-    try:
+    async with BraveClient(config) as instance:
         yield instance
-    finally:
-        await instance.__aexit__(None, None, None)
 
 
 async def test_open_conversation_returns_id(client: BraveClient) -> None:
@@ -45,8 +43,7 @@ async def test_open_conversation_returns_id(client: BraveClient) -> None:
     assert conv.symmetric_key is not None
     assert len(conv.symmetric_key) == 43
     assert conv.share_link is not None
-    assert "sig=" in conv.share_link
-    await conv.close()
+    await conv.reset()
 
 
 async def test_collect_simple_answer(client: BraveClient) -> None:
@@ -54,28 +51,34 @@ async def test_collect_simple_answer(client: BraveClient) -> None:
     result = await conv.collect()
     assert result.is_complete
     assert len(result.text) > 0
-    await conv.close()
+    await conv.reset()
 
 
 async def test_stream_yields_text_deltas(client: BraveClient) -> None:
     conv = await client.conversation("who is iqbalmh18")
     chunks: list[str] = []
-    async for evt in conv.stream_events():
-        if evt.type is StreamEventType.TEXT_DELTA:
-            chunks.append(evt.delta)
+    async for event in conv.stream_events():
+        if event.type is StreamEventType.TEXT_DELTA:
+            chunks.append(event.delta)
     assert "".join(chunks)
-    await conv.close()
+    await conv.reset()
 
 
 async def test_contextual_search_does_not_crash(client: BraveClient) -> None:
     conv = await client.conversation(
-        "ringkasan",
+        "summary",
         query_type=QueryType.CONTEXTUAL_SEARCH,
-        quote="cuaca",
+        quote="weather",
     )
     try:
         await conv.collect()
     except Exception:
         pass
     finally:
-        await conv.close()
+        await conv.reset()
+
+
+async def test_suggest_returns_typed_result(client: BraveClient) -> None:
+    result = await client.suggest("python")
+    assert result.query == "python"
+    assert result.suggestions

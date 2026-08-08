@@ -1,46 +1,52 @@
+"""brave-api-python: async Python client for the Brave Ask & Search API.
+
+Public surface:
+
+- :class:`BraveClient` and :class:`ClientConfig` for all API access
+- :class:`Conversation` for multi-turn streaming conversations
+- typed result models (:class:`StreamResult`, :class:`SearchResult`,
+  :class:`SuggestResult`, ...)
+- enums (:class:`QueryType`, :class:`StreamEventType`, :class:`StreamState`)
+- the full exception hierarchy rooted at :class:`BraveAPIError`
+
+An MCP server built on FastMCP ships in :mod:`brave_api.mcp`.
+"""
+
 from __future__ import annotations
 
-from ._crypto.keys import generate_symmetric_key, is_valid_symmetric_key
-from ._internal.config import ClientConfig
-from ._internal.constants import VERSION
-from ._internal.models import (
-    ConversationResponse,
-    ImageResult,
-    Infobox,
-    SearchNewsResult,
-    SearchResult,
-    SearchWebResult,
-    SignedParams,
-    StreamEvent,
-    StreamResult,
-    SuggestItem,
-    TokenModel,
-    ToolUseEvent,
-    VideoResult,
-    WebResult,
-)
-from ._internal.types import (
-    QueryType,
-    StreamEventType,
-    StreamState,
-    ToolName,
-)
-from ._streaming.parser import iter_events, parse_line
+from ._internal.crypto import generate_symmetric_key, is_valid_symmetric_key
+from ._version import __version__
 from .client import BraveClient
+from .config import ClientConfig
 from .conversation import Conversation
+from .enums import QueryType, StreamEventType, StreamState
 from .exceptions import (
     BraveAPIError,
     ChallengeRequiredError,
     ConversationError,
     HTTPStatusError,
-    InvalidResponseError,
+    ResponseParseError,
     StreamAbortedError,
     TokenExtractionError,
     TransportError,
 )
+from .models import (
+    ConversationResponse,
+    ImageResult,
+    Infobox,
+    NewsResult,
+    SearchResult,
+    StreamEvent,
+    StreamResult,
+    SuggestItem,
+    SuggestResult,
+    TokenModel,
+    VideoResult,
+    WebResult,
+)
 
 __all__ = [
-    "VERSION",
+    "__version__",
     "BraveAPIError",
     "BraveClient",
     "ChallengeRequiredError",
@@ -51,27 +57,22 @@ __all__ = [
     "HTTPStatusError",
     "ImageResult",
     "Infobox",
-    "InvalidResponseError",
+    "NewsResult",
     "QueryType",
-    "SearchNewsResult",
+    "ResponseParseError",
     "SearchResult",
-    "SearchWebResult",
-    "SignedParams",
     "StreamAbortedError",
     "StreamEvent",
     "StreamEventType",
     "StreamResult",
     "StreamState",
     "SuggestItem",
+    "SuggestResult",
     "TokenExtractionError",
     "TokenModel",
-    "ToolName",
-    "ToolUseEvent",
     "TransportError",
     "VideoResult",
     "WebResult",
     "generate_symmetric_key",
     "is_valid_symmetric_key",
-    "iter_events",
-    "parse_line",
 ]

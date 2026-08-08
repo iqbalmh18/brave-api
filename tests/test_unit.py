@@ -1,31 +1,29 @@
-"""Unit test brave_api (tanpa jaringan)."""
+"""Unit tests for crypto, token extraction, SSE parsing, config and exceptions."""
 
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
-from brave_api import (
-    BraveAPIError,
-    StreamEventType,
-    generate_symmetric_key,
-    is_valid_symmetric_key,
-)
-from brave_api._internal.config import ClientConfig
-from brave_api._internal.models import TokenModel
-from brave_api._streaming.parser import is_terminal_event, parse_line
-from brave_api._internal.token_extractor import decode_pool, find_token
+from brave_api._internal.crypto import generate_symmetric_key, is_valid_symmetric_key
+from brave_api._internal.sse import parse_line
+from brave_api._internal.token import decode_pool, find_token
+from brave_api.config import ClientConfig
+from brave_api.enums import StreamEventType
 from brave_api.exceptions import (
+    BraveAPIError,
     ChallengeRequiredError,
     ConversationError,
     HTTPStatusError,
-    InvalidResponseError,
+    ResponseParseError,
     StreamAbortedError,
     TokenExtractionError,
     TransportError,
 )
+from brave_api.models import TokenModel
 
 
-class TestGenerateSymmetricKey:
+class TestSymmetricKey:
     def test_generated_key_is_valid(self) -> None:
         key = generate_symmetric_key()
         assert is_valid_symmetric_key(key)
@@ -73,7 +71,8 @@ class TestDecodePool:
 
 
 class TestFindToken:
-    def _payload(self, token: dict[str, str]) -> dict[str, object]:
+    @staticmethod
+    def _payload(token: dict[str, str]) -> dict[str, object]:
         return {
             "type": "data",
             "nodes": [
@@ -132,13 +131,10 @@ class TestParseLine:
         event = parse_line('{"type": "future_event", "foo": 1}')
         assert event is None
 
-    def test_is_terminal_event(self) -> None:
-        terminal = parse_line('{"type": "text_stop"}')
-        non_terminal = parse_line('{"type": "text_delta", "delta": "x"}')
-        assert terminal is not None
-        assert non_terminal is not None
-        assert is_terminal_event(terminal)
-        assert not is_terminal_event(non_terminal)
+    def test_error_event_exposes_message(self) -> None:
+        event = parse_line('{"type": "error", "message": "boom"}')
+        assert event is not None
+        assert event.error_message == "boom"
 
 
 class TestClientConfig:
@@ -149,16 +145,42 @@ class TestClientConfig:
         assert config.max_retries >= 1
 
     def test_is_frozen(self) -> None:
-        from pydantic import ValidationError
-
         config = ClientConfig()
-        with pytest.raises((AttributeError, TypeError, ValidationError)):
-            config.base_url = "https://evil.example"  # type: ignore[misc]
+        with pytest.raises(ValidationError):
+            config.timeout = 1.0  # type: ignore[misc]
 
     def test_build_referer(self) -> None:
         config = ClientConfig(base_url="https://example.com")
         assert config.build_referer() == "https://example.com"
         assert config.build_referer("/path") == "https://example.com/path"
+
+    def test_rejects_http_relative_base_url(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(base_url="example.com")
+
+    def test_rejects_invalid_country(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(country="US")
+
+    def test_rejects_invalid_geoloc(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(geoloc="jakarta")
+
+    def test_rejects_invalid_safesearch(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(safesearch="sometimes")  # type: ignore[arg-type]
+
+    def test_rejects_invalid_proxy_scheme(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(proxies=["ftp://proxy.example:21"])
+
+    def test_deduplicates_and_normalizes_proxies(self) -> None:
+        config = ClientConfig(proxies=[" http://a:8080 ", "http://a:8080", "socks5://b:1080"])
+        assert config.proxies == ["http://a:8080", "socks5://b:1080"]
+
+    def test_rejects_extra_fields(self) -> None:
+        with pytest.raises(ValidationError):
+            ClientConfig(not_a_field=True)  # type: ignore[call-arg]
 
 
 class TestExceptions:
@@ -169,12 +191,12 @@ class TestExceptions:
             ConversationError,
             StreamAbortedError,
             ChallengeRequiredError,
-            InvalidResponseError,
+            ResponseParseError,
         ):
             err = cls("test")
             assert isinstance(err, BraveAPIError)
 
-    def test_http_status_error_requires_status_code(self) -> None:
+    def test_http_status_error_carries_status_and_body(self) -> None:
         err = HTTPStatusError("boom", status_code=400, response_text="<html>")
         assert err.status_code == 400
         assert err.response_text == "<html>"
