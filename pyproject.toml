@@ -154,12 +154,16 @@ minor_tags = ["feat"]
 patch_tags = ["fix", "perf", "refactor"]
 other_allowed_tags = ["build", "chore", "ci", "docs", "style", "test"]
 default_bump_level = 0
-parse_squash_commits = true
+# Squash merges produce one commit per PR; keep them as a single release
+# entry (with the PR description as the narrative) instead of splitting the
+# body's `* commit` list into separate entries.
+parse_squash_commits = false
 ignore_merge_commits = true
 
 [tool.semantic_release.changelog]
 mode = "update"
 insertion_flag = "<!-- version list -->"
+template_dir = "templates"
 
 [tool.semantic_release.changelog.default_templates]
 changelog_file = "CHANGELOG.md"
