@@ -12,6 +12,14 @@ preserved across releases.
 
 <!-- version list -->
 
+## v1.0.2 (2026-08-08)
+
+### Bug Fixes
+
+- Render commit bodies in release notes ([#5](https://github.com/iqbalmh18/brave-api/pull/5),
+  [`bbfd317`](https://github.com/iqbalmh18/brave-api/commit/bbfd31785e918062bb166fd2ccbbfcb09259478d))
+
+
 ## v1.0.1 (2026-08-08)
 
 ### Bug Fixes
