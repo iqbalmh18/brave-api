@@ -1,5 +1,3 @@
-# Brave API
-
 <img src="./brave-api.svg" alt="Brave API banner" />
 
 <p align="center">
@@ -18,7 +16,7 @@
 </p>
 
 <p align="center">
-An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
+An async Python client for <a href="https://search.brave.com">Brave Search</a>, providing streaming AI answers and structured web search in a single, typed interface - with a built-in Model Context Protocol (MCP) server.
 </p>
 
 ---
@@ -49,8 +47,8 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 
 **Ask (AI)**
 
-- `client.ask()` — blocking call, returns a complete `StreamResult` with text, infobox, images, videos, web results, and followups
-- `client.ask_stream()` — async generator that yields `StreamEvent` objects in real time
+- `client.ask()` - blocking call, returns a complete `StreamResult` with text, infobox, images, videos, web results, and followups
+- `client.ask_stream()` - async generator that yields `StreamEvent` objects in real time
 - Multi-turn conversation support via `conversation_id` and `symmetric_key`
 - Multimodal input: attach images alongside questions (vision)
 - Automatic query language detection, with manual override
@@ -58,14 +56,14 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 
 **Search (Web)**
 
-- `client.search()` — scrape structured web and news results with pagination
-- `client.suggest()` — autocomplete suggestions with entity detection
+- `client.search()` - scrape structured web and news results with pagination
+- `client.suggest()` - autocomplete suggestions with entity detection
 
 **MCP Server**
 
 - Exposes `ask`, `search`, and `suggest` as MCP tools, ready to drop into Claude Desktop, Claude Code, Cursor, or any MCP-compatible client
 - Supports both **stdio** (local clients) and **HTTP/SSE** (remote or multi-client deployments) transports
-- Configured entirely through environment variables — no code changes required
+- Configured entirely through environment variables - no code changes required
 - Shares the same typed client and error hierarchy as the library
 
 **General**
@@ -152,7 +150,7 @@ asyncio.run(main())
 
 ## Ask
 
-### ask() — blocking, full result
+### ask() - blocking, full result
 
 ```python
 async with BraveClient() as client:
@@ -187,7 +185,7 @@ from pathlib import Path
 result = await client.ask("what is in this image?", image=Path("photo.jpg"))
 ```
 
-### ask_stream() — real-time streaming
+### ask_stream() - real-time streaming
 
 ```python
 from brave_api import BraveClient, StreamEventType
@@ -216,7 +214,7 @@ async with BraveClient() as client:
 
 ## Search
 
-### search() — web and news results
+### search() - web and news results
 
 ```python
 async with BraveClient() as client:
@@ -256,7 +254,7 @@ Disable spellcheck for exact keyword matching:
 result = await client.search("pyton tutorial", spellcheck=False)
 ```
 
-### suggest() — autocomplete
+### suggest() - autocomplete
 
 ```python
 result = await client.suggest("elon")
@@ -530,7 +528,7 @@ Brave API ships with a [Model Context Protocol](https://modelcontextprotocol.io)
 
 ### Running the server
 
-**stdio** (default — for local clients like Claude Desktop, Claude Code, Cursor):
+**stdio** (default - for local clients like Claude Desktop, Claude Code, Cursor):
 
 ```bash
 python -m brave_api.mcp.server
@@ -587,7 +585,7 @@ Or via the Claude Code CLI:
 claude mcp add brave-api python -- -m brave_api.mcp.server
 ```
 
-**OpenAI-compatible clients / remote deployments** — start the server in HTTP mode and point the client at the endpoint:
+**OpenAI-compatible clients / remote deployments** - start the server in HTTP mode and point the client at the endpoint:
 
 ```bash
 brave-api-mcp --http --host 0.0.0.0 --port 8000
@@ -597,7 +595,7 @@ The server exposes a standard MCP-over-HTTP (Streamable HTTP / SSE) endpoint at 
 
 ### Environment variables
 
-All server behavior is controlled through environment variables — no code changes required.
+All server behavior is controlled through environment variables - no code changes required.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -607,7 +605,7 @@ All server behavior is controlled through environment variables — no code chan
 | `BRAVE_LANGUAGE` | library default | Response language (BCP-47) |
 | `BRAVE_UI_LANG` | library default | UI language, e.g. `en-us` |
 | `BRAVE_SAFESEARCH` | library default | `off`, `moderate`, or `strict` |
-| `BRAVE_ENABLE_RESEARCH` | `false` | `true`/`false`/`1`/`0`/`yes`/`no` — enables deep research mode |
+| `BRAVE_ENABLE_RESEARCH` | `false` | `true`/`false`/`1`/`0`/`yes`/`no` - enables deep research mode |
 | `BRAVE_REQUEST_TIMEOUT` | library default | Request timeout in seconds |
 | `BRAVE_STREAM_TIMEOUT` | unlimited | Streaming timeout in seconds |
 | `BRAVE_MAX_RETRIES` | library default | Maximum retry attempts on transient failures |

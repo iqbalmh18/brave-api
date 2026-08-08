@@ -1,57 +1,462 @@
-<svg width="1200" height="400" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>Brave API banner, light theme</title>
-  <desc>Light, cream-toned terminal-styled banner with a subtle grid background for the Brave API Python client, reading Brave API with free, no login, no API key messaging and a View on GitHub button.</desc>
-
+<svg width="1280" height="400" viewBox="0 0 1280 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-      <path d="M40 0 L0 0 L0 40" fill="none" stroke="#E4DFD2" stroke-width="1"/>
+    <!-- Background -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c0b0d"/>
+      <stop offset="55%" stop-color="#141213"/>
+      <stop offset="100%" stop-color="#0c0b0d"/>
+    </linearGradient>
+
+    <!-- Orange accents -->
+    <linearGradient id="orangeFade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FB542B" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#FF6B3D" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF7A3D"/>
+      <stop offset="100%" stop-color="#FB2B2B"/>
+    </linearGradient>
+
+    <!-- Brave-inspired shield gradients -->
+    <linearGradient id="braveShield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7A3D"/>
+      <stop offset="48%" stop-color="#FB542B"/>
+      <stop offset="100%" stop-color="#D92D20"/>
+    </linearGradient>
+
+    <linearGradient id="braveShieldDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E63E27"/>
+      <stop offset="100%" stop-color="#A91E19"/>
+    </linearGradient>
+
+    <linearGradient id="lionFace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF3EA"/>
+      <stop offset="100%" stop-color="#FFD7C4"/>
+    </linearGradient>
+
+    <radialGradient id="glowOrange" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FB542B" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="glowRed" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF2A2A" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#FF2A2A" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="glowIcon" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FB542B" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Blueprint grid -->
+    <pattern id="gridMinor" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path
+        d="M 32 0 L 0 0 0 32"
+        fill="none"
+        stroke="#ffffff"
+        stroke-opacity="0.045"
+        stroke-width="1"
+      />
     </pattern>
-    <clipPath id="cardClip">
-      <rect x="1" y="1" width="1198" height="398" rx="18"/>
-    </clipPath>
+
+    <pattern id="gridMajor" width="160" height="160" patternUnits="userSpaceOnUse">
+      <path
+        d="M 160 0 L 0 0 0 160"
+        fill="none"
+        stroke="#ffffff"
+        stroke-opacity="0.09"
+        stroke-width="1"
+      />
+      <path
+        d="M 0 0 L 6 0 M 0 0 L 0 6"
+        stroke="#FB542B"
+        stroke-opacity="0.55"
+        stroke-width="1.4"
+      />
+    </pattern>
+
+    <style>
+      .title {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-weight: 800;
+      }
+
+      .mono {
+        font-family: 'Consolas', 'Courier New', monospace;
+      }
+
+      .sub {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-weight: 400;
+      }
+    </style>
   </defs>
 
-  <rect x="1" y="1" width="1198" height="398" rx="18" fill="#FAF8F2" stroke="#E4DFD2" stroke-width="1.5"/>
-  <g clip-path="url(#cardClip)">
-    <rect x="1" y="1" width="1198" height="398" fill="url(#grid)"/>
+
+  <!-- ========================================================= -->
+  <!-- BACKGROUND -->
+  <!-- ========================================================= -->
+
+  <rect width="1280" height="400" fill="url(#bg)"/>
+  <rect width="1280" height="400" fill="url(#gridMinor)"/>
+  <rect width="1280" height="400" fill="url(#gridMajor)"/>
+
+  <!-- Ambient glow -->
+  <circle cx="150" cy="70" r="240" fill="url(#glowOrange)"/>
+  <circle cx="1180" cy="360" r="260" fill="url(#glowRed)"/>
+
+  <!-- Top / bottom accent -->
+  <rect x="0" y="0" width="1280" height="3" fill="url(#orangeFade)"/>
+  <rect x="0" y="397" width="1280" height="3" fill="url(#orangeFade)"/>
+
+
+  <!-- ========================================================= -->
+  <!-- REPOSITORY PATH -->
+  <!-- ========================================================= -->
+
+  <g transform="translate(80, 60)">
+    <circle cx="0" cy="-5" r="4" fill="#FB542B"/>
+
+    <text
+      x="14"
+      y="0"
+      class="mono"
+      font-size="14"
+      fill="#8f8f97"
+      letter-spacing="0.5"
+    >
+      github.com/iqbalmh18/brave-api
+    </text>
   </g>
 
-  <circle cx="52" cy="42" r="7" fill="#EE6A5F"/>
-  <circle cx="76" cy="42" r="7" fill="#F3B94E"/>
-  <circle cx="100" cy="42" r="7" fill="#3EB35E"/>
-  <text x="132" y="47" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="16" fill="#9A9384">~/brave-api</text>
-  <line x1="0" y1="72" x2="1200" y2="72" stroke="#E4DFD2" stroke-width="1"/>
 
-  <g stroke="#3B372E" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round">
-    <rect x="90" y="120" width="230" height="160" rx="10" fill="#FFFFFF"/>
-    <rect x="106" y="136" width="198" height="128" rx="4" fill="#F7F4EC"/>
-    <path d="M40 300 L370 300 L350 320 L60 320 Z" fill="#FFFFFF"/>
-    <line x1="150" y1="280" x2="260" y2="280" stroke-width="6"/>
+  <!-- ========================================================= -->
+  <!-- TITLE -->
+  <!-- ========================================================= -->
+
+  <text
+    x="78"
+    y="156"
+    class="title"
+    font-size="62"
+    fill="url(#titleGrad)"
+  >
+    Brave API
+  </text>
+
+
+  <!-- ========================================================= -->
+  <!-- SUBTITLE -->
+  <!-- ========================================================= -->
+
+  <text
+    x="80"
+    y="194"
+    class="sub"
+    font-size="17.5"
+    fill="#c7c5c6"
+  >
+    An async Python client for Brave Search, providing streaming AI answers and structured web search
+  </text>
+  <text
+    x="80"
+    y="224"
+    class="sub"
+    font-size="17.5"
+    fill="#c7c5c6"
+  >
+    in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
+  </text>
+
+
+  <!-- Divider -->
+  <rect
+    x="80"
+    y="238"
+    width="1000"
+    height="1"
+    fill="#ffffff"
+    fill-opacity="0.09"
+  />
+
+
+  <!-- ========================================================= -->
+  <!-- FEATURE BADGES -->
+  <!-- ========================================================= -->
+
+  <g class="mono" font-size="15" font-weight="700">
+
+    <g transform="translate(80, 250)">
+      <rect
+        width="102"
+        height="36"
+        rx="18"
+        fill="#17140f"
+        stroke="#FB542B"
+        stroke-width="1.3"
+      />
+      <text
+        x="51"
+        y="23"
+        text-anchor="middle"
+        fill="#FF7A3D"
+      >
+        Ask
+      </text>
+    </g>
+
+    <g transform="translate(196, 250)">
+      <rect
+        width="96"
+        height="36"
+        rx="18"
+        fill="#17140f"
+        stroke="#FB542B"
+        stroke-width="1.3"
+      />
+      <text
+        x="48"
+        y="23"
+        text-anchor="middle"
+        fill="#FF7A3D"
+      >
+        Search
+      </text>
+    </g>
+
+    <g transform="translate(306, 250)">
+      <rect
+        width="80"
+        height="36"
+        rx="18"
+        fill="#17140f"
+        stroke="#FB542B"
+        stroke-width="1.3"
+      />
+      <text
+        x="40"
+        y="23"
+        text-anchor="middle"
+        fill="#FF7A3D"
+      >
+        MCP
+      </text>
+    </g>
+
+    <g transform="translate(400, 250)">
+      <rect
+        width="110"
+        height="36"
+        rx="18"
+        fill="#17140f"
+        stroke="#FB542B"
+        stroke-width="1.3"
+      />
+      <text
+        x="55"
+        y="23"
+        text-anchor="middle"
+        fill="#FF7A3D"
+      >
+        Streaming
+      </text>
+    </g>
+
+    <g transform="translate(524, 250)">
+      <rect
+        width="86"
+        height="36"
+        rx="18"
+        fill="#17140f"
+        stroke="#FB542B"
+        stroke-width="1.3"
+      />
+      <text
+        x="43"
+        y="23"
+        text-anchor="middle"
+        fill="#FF7A3D"
+      >
+        Async
+      </text>
+    </g>
+
   </g>
 
-  <g font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="13">
-    <text x="120" y="160" fill="#C15F3C">&gt; ask("brave api")</text>
-    <text x="120" y="180" fill="#3E8F5B">200 OK  no_key=true</text>
-    <text x="120" y="200" fill="#9A9384">web_results: 10</text>
-    <text x="120" y="220" fill="#9A9384">images: 4</text>
-    <text x="120" y="240" fill="#C15F3C">_</text>
+
+  <!-- ========================================================= -->
+  <!-- TAGLINE -->
+  <!-- ========================================================= -->
+
+  <text
+    x="80"
+    y="322"
+    class="sub"
+    font-size="14.5"
+    fill="#8a8890"
+  >
+  Search the web. Ask anything. No Login. No API key. No Bullshit.
+  </text>
+
+
+  <!-- ========================================================= -->
+  <!-- FOOTER -->
+  <!-- ========================================================= -->
+
+  <rect
+    x="80"
+    y="348"
+    width="1120"
+    height="1"
+    fill="#ffffff"
+    fill-opacity="0.09"
+  />
+
+  <g transform="translate(80, 378)">
+    <text
+      class="sub"
+      font-size="14"
+      fill="#77757c"
+    >
+      build with
+    </text>
+
+    <path
+      d="M8 4
+         C6 -0.5, -0.5 -0.5, -0.5 4.5
+         C-0.5 9, 8 15, 8 15
+         C8 15, 16.5 9, 16.5 4.5
+         C16.5 -0.5, 10 -0.5, 8 4 Z"
+      fill="#FB542B"
+      transform="translate(72,-11)"
+    />
+
+    <text
+      x="96"
+      class="mono"
+      font-size="14"
+      fill="#FF7A3D"
+      font-weight="700"
+    >
+      iqbalmh18
+    </text>
   </g>
 
-  <g stroke="#3B372E" stroke-width="7" fill="none" stroke-linecap="round">
-    <circle cx="262" cy="212" r="46" fill="#FAF8F2" fill-opacity="0.7"/>
-    <line x1="295" y1="245" x2="345" y2="295"/>
-  </g>
-  <circle cx="262" cy="212" r="46" fill="none" stroke="#D97757" stroke-width="2.5" stroke-dasharray="2 6"/>
+<!-- ========================================================= -->
+<!-- BRAVE-STYLE SHIELD ICON -->
+<!-- ========================================================= -->
 
-  <circle cx="440" cy="118" r="7" fill="#D97757"/>
-  <text x="464" y="124" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="17" font-weight="700" letter-spacing="1" fill="#C15F3C">FREE &#183; NO LOGIN &#183; NO API KEY REQUIRED</text>
+<g transform="translate(1128, 156)">
 
-  <text x="440" y="200" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="52" font-weight="700" fill="#2B281F">Brave API</text>
-  <text x="440" y="248" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="24" fill="#8A8478">Ask and search Brave, straight from Python.</text>
+  <!-- Ambient glow -->
+  <circle
+    cx="0"
+    cy="0"
+    r="108"
+    fill="url(#glowIcon)"
+  />
 
-  <a href="https://github.com/iqbalmh18/brave-api">
-    <rect x="440" y="286" width="286" height="58" rx="10" fill="#D97757"/>
-    <text x="483" y="322" font-family="ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="#FFFFFF">VIEW ON GITHUB</text>
-    <path d="M685 306 L703 315 L685 324" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  </a>
+  <!-- Outer shield -->
+  <path
+    d="
+      M 0 -88
+      C 31 -84 58 -74 78 -58
+      L 70 8
+      C 67 42 51 68 27 85
+      C 16 93 6 98 0 101
+      C -6 98 -16 93 -27 85
+      C -51 68 -67 42 -70 8
+      L -78 -58
+      C -58 -74 -31 -84 0 -88
+      Z
+    "
+    fill="url(#braveShield)"
+  />
+
+  <!-- Inner shield -->
+  <path
+    d="
+      M 0 -69
+      C 24 -66 45 -58 61 -45
+      L 54 7
+      C 51 33 40 53 21 68
+      C 12 75 5 80 0 82
+      C -5 80 -12 75 -21 68
+      C -40 53 -51 33 -54 7
+      L -61 -45
+      C -45 -58 -24 -66 0 -69
+      Z
+    "
+    fill="#171310"
+  />
+
+  <!-- Shield center facet -->
+  <path
+    d="
+      M 0 -69
+      C 24 -66 45 -58 61 -45
+      L 54 7
+      C 51 33 40 53 21 68
+      C 12 75 5 80 0 82
+      Z
+    "
+    fill="url(#braveShieldDark)"
+    opacity="0.45"
+  />
+
+  <!-- Left facet -->
+  <path
+    d="
+      M 0 -69
+      C -24 -66 -45 -58 -61 -45
+      L -54 7
+      C -51 33 -40 53 -21 68
+      C -12 75 -5 80 0 82
+      Z
+    "
+    fill="#FF7140"
+    opacity="0.25"
+  />
+
+  <!-- Shield top highlight -->
+  <path
+    d="
+      M -52 -58
+      C -35 -69 -18 -75 0 -78
+      C 18 -75 35 -69 52 -58
+    "
+    fill="none"
+    stroke="#FF9A68"
+    stroke-width="2"
+    stroke-opacity="0.7"
+    stroke-linecap="round"
+  />
+
+  <!-- Center vertical accent -->
+  <path
+    d="
+      M 0 -62
+      L 0 69
+    "
+    stroke="#FB542B"
+    stroke-width="1.2"
+    stroke-opacity="0.18"
+  />
+
+  <!-- Bottom shield accent -->
+  <path
+    d="
+      M -30 68
+      C -18 77 -7 83 0 87
+      C 7 83 18 77 30 68
+    "
+    fill="none"
+    stroke="#FF7A3D"
+    stroke-width="1.5"
+    stroke-opacity="0.55"
+  />
+</g>
 </svg>
