@@ -12,6 +12,19 @@ preserved across releases.
 
 <!-- version list -->
 
+## v1.0.3 (2026-08-08)
+
+### Bug Fixes
+
+- Persist-credentials false so release tag uses PAT.
+  ([#6](https://github.com/iqbalmh18/brave-api/pull/6),
+  [`4b333bb`](https://github.com/iqbalmh18/brave-api/commit/4b333bb5d6bc4085b1edaeea58dc4ae94b1cc7aa))
+
+  * fix: render commit bodies in release notes
+
+  * fix: persist-credentials false so release tag uses PAT
+
+
 ## v1.0.2 (2026-08-08)
 
 ### Bug Fixes

@@ -5,4 +5,4 @@ via `[tool.hatch.version] path = "brave_api/_version.py"`, so the installed
 distribution metadata and the runtime value always agree.
 """
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
