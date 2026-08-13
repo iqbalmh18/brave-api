@@ -24,7 +24,6 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 ## Table of Contents
 
 - [Features](#features)
-- [Architecture](#architecture)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -37,7 +36,6 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - [StreamResult](#streamresult)
 - [Error Handling](#error-handling)
 - [MCP Server](#mcp-server)
-- [Project Structure](#project-structure)
 - [Examples](#examples)
 - [License](#license)
 
@@ -66,34 +64,6 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 - Configured entirely through environment variables - no code changes required
 - Shares the same typed client and error hierarchy as the library
 
-**General**
-
-- Async-native, built on `curl_cffi` with browser fingerprinting (no API key required)
-- Full Pydantic models for runtime validation and type safety
-- Structured exception hierarchy for predictable error handling
-- Configurable language, country, safesearch, geolocation, timeouts, and retries
-- Optional round-robin proxy pool with automatic direct-connection fallback
-
----
-
-## Architecture
-
-```mermaid
-graph TD
-    A[Your Application] -->|imports| B[BraveClient]
-    C[MCP Client<br/>Claude Desktop / Claude Code / other] -->|stdio| D[Brave API MCP Server]
-    G[OpenAI-compatible Client<br/>or remote agent] -->|HTTP / SSE| D
-    D -->|ask / search / suggest| B
-    B --> E[Transport<br/>curl_cffi]
-    E --> F[Brave Search / Brave AI]
-
-    style B fill:#2b2b2b,stroke:#888,color:#fff
-    style D fill:#2b2b2b,stroke:#888,color:#fff
-    style F fill:#1a1a1a,stroke:#888,color:#fff
-```
-
-The library can be used directly in Python code, or indirectly through the MCP server, which wraps the same `BraveClient` and exposes it as tools for LLM-based agents.
-
 ---
 
 ## Requirements
@@ -106,11 +76,15 @@ The library can be used directly in Python code, or indirectly through the MCP s
 
 ## Installation
 
+Using pip:
 ```bash
-uv pip install brave-api-python
+pip install brave-api-python
 ```
-
-From source (requires [uv](https://docs.astral.sh/uv/)):
+Or with [uv](https://docs.astral.sh/uv/):
+```bash
+uv add brave-api-python
+```
+From source :
 
 ```bash
 git clone https://github.com/iqbalmh18/brave-api
@@ -653,6 +627,16 @@ Releases are generated from Conventional Commits by
 pushing to `main` runs CI and, when there are release-worthy commits,
 creates a tagged GitHub Release with the built distributions attached.
 Publishing to PyPI uses trusted publishing (OIDC) and requires no API tokens.
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=iqbalmh18%2Fbrave-api&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=iqbalmh18/brave-api&type=date&theme=dark&legend=top-left&sealed_token=ayDqZU850vGmWyV1GfE9kdb8uBFENPOtRixuvpOJ4E4UaJAtQ5XxwHAZM3SQD8REeNFlJuCL41ARHltPqzIW0HvNXSQKpN3sXNMxDj4xnE0jTpivrLPhjA" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=iqbalmh18/brave-api&type=date&legend=top-left&sealed_token=ayDqZU850vGmWyV1GfE9kdb8uBFENPOtRixuvpOJ4E4UaJAtQ5XxwHAZM3SQD8REeNFlJuCL41ARHltPqzIW0HvNXSQKpN3sXNMxDj4xnE0jTpivrLPhjA" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=iqbalmh18/brave-api&type=date&legend=top-left&sealed_token=ayDqZU850vGmWyV1GfE9kdb8uBFENPOtRixuvpOJ4E4UaJAtQ5XxwHAZM3SQD8REeNFlJuCL41ARHltPqzIW0HvNXSQKpN3sXNMxDj4xnE0jTpivrLPhjA" />
+ </picture>
+</a>
 
 ## License
 
