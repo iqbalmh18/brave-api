@@ -9,46 +9,46 @@
 
     <!-- Orange accents -->
     <linearGradient id="orangeFade" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FB542B" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#FF6B3D" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#fe7039" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#ff9b76" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
     </linearGradient>
 
     <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FF7A3D"/>
-      <stop offset="100%" stop-color="#FB2B2B"/>
+      <stop offset="0%" stop-color="#ff9b76"/>
+      <stop offset="100%" stop-color="#d95321"/>
     </linearGradient>
 
     <!-- Brave-inspired shield gradients -->
     <linearGradient id="braveShield" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF7A3D"/>
-      <stop offset="48%" stop-color="#FB542B"/>
-      <stop offset="100%" stop-color="#D92D20"/>
+      <stop offset="0%" stop-color="#ff9b76"/>
+      <stop offset="48%" stop-color="#fe7039"/>
+      <stop offset="100%" stop-color="#b9431c"/>
     </linearGradient>
 
     <linearGradient id="braveShieldDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#E63E27"/>
-      <stop offset="100%" stop-color="#A91E19"/>
+      <stop offset="0%" stop-color="#d95321"/>
+      <stop offset="100%" stop-color="#9f3218"/>
     </linearGradient>
 
     <linearGradient id="lionFace" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFF3EA"/>
-      <stop offset="100%" stop-color="#FFD7C4"/>
+      <stop offset="0%" stop-color="#fff0e8"/>
+      <stop offset="100%" stop-color="#ffd0bd"/>
     </linearGradient>
 
     <radialGradient id="glowOrange" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FB542B" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#fe7039" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
     </radialGradient>
 
     <radialGradient id="glowRed" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FF2A2A" stop-opacity="0.16"/>
-      <stop offset="100%" stop-color="#FF2A2A" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#d95321" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#d95321" stop-opacity="0"/>
     </radialGradient>
 
     <radialGradient id="glowIcon" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FB542B" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#FB542B" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#fe7039" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
     </radialGradient>
 
     <!-- Blueprint grid -->
@@ -72,7 +72,7 @@
       />
       <path
         d="M 0 0 L 6 0 M 0 0 L 0 6"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-opacity="0.55"
         stroke-width="1.4"
       />
@@ -118,7 +118,7 @@
   <!-- ========================================================= -->
 
   <g transform="translate(80, 60)">
-    <circle cx="0" cy="-5" r="4" fill="#FB542B"/>
+    <circle cx="0" cy="-5" r="4" fill="#fe7039"/>
 
     <text
       x="14"
@@ -195,14 +195,14 @@
         height="36"
         rx="18"
         fill="#17140f"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-width="1.3"
       />
       <text
         x="51"
         y="23"
         text-anchor="middle"
-        fill="#FF7A3D"
+        fill="#ff9b76"
       >
         Ask
       </text>
@@ -214,14 +214,14 @@
         height="36"
         rx="18"
         fill="#17140f"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-width="1.3"
       />
       <text
         x="48"
         y="23"
         text-anchor="middle"
-        fill="#FF7A3D"
+        fill="#ff9b76"
       >
         Search
       </text>
@@ -233,14 +233,14 @@
         height="36"
         rx="18"
         fill="#17140f"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-width="1.3"
       />
       <text
         x="40"
         y="23"
         text-anchor="middle"
-        fill="#FF7A3D"
+        fill="#ff9b76"
       >
         MCP
       </text>
@@ -252,14 +252,14 @@
         height="36"
         rx="18"
         fill="#17140f"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-width="1.3"
       />
       <text
         x="55"
         y="23"
         text-anchor="middle"
-        fill="#FF7A3D"
+        fill="#ff9b76"
       >
         Streaming
       </text>
@@ -271,14 +271,14 @@
         height="36"
         rx="18"
         fill="#17140f"
-        stroke="#FB542B"
+        stroke="#fe7039"
         stroke-width="1.3"
       />
       <text
         x="43"
         y="23"
         text-anchor="middle"
-        fill="#FF7A3D"
+        fill="#ff9b76"
       >
         Async
       </text>
@@ -330,7 +330,7 @@
          C-0.5 9, 8 15, 8 15
          C8 15, 16.5 9, 16.5 4.5
          C16.5 -0.5, 10 -0.5, 8 4 Z"
-      fill="#FB542B"
+      fill="#fe7039"
       transform="translate(72,-11)"
     />
 
@@ -338,7 +338,7 @@
       x="96"
       class="mono"
       font-size="14"
-      fill="#FF7A3D"
+      fill="#ff9b76"
       font-weight="700"
     >
       iqbalmh18
@@ -417,7 +417,7 @@
       C -12 75 -5 80 0 82
       Z
     "
-    fill="#FF7140"
+    fill="#ff9b76"
     opacity="0.25"
   />
 
@@ -429,7 +429,7 @@
       C 18 -75 35 -69 52 -58
     "
     fill="none"
-    stroke="#FF9A68"
+    stroke="#ffb99e"
     stroke-width="2"
     stroke-opacity="0.7"
     stroke-linecap="round"
@@ -441,7 +441,7 @@
       M 0 -62
       L 0 69
     "
-    stroke="#FB542B"
+    stroke="#fe7039"
     stroke-width="1.2"
     stroke-opacity="0.18"
   />
@@ -454,7 +454,7 @@
       C 7 83 18 77 30 68
     "
     fill="none"
-    stroke="#FF7A3D"
+    stroke="#ff9b76"
     stroke-width="1.5"
     stroke-opacity="0.55"
   />

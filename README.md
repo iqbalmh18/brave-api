@@ -2,16 +2,16 @@
 
 <p align="center">
   <a href="https://pypi.org/project/brave-api-python/">
-    <img src="https://img.shields.io/pypi/v/brave-api-python.svg" alt="PyPI version" />
+    <img src="https://img.shields.io/pypi/v/brave-api-python.svg?color=fe7039" alt="PyPI version" />
   </a>
   <a href="https://pypi.org/project/brave-api-python/">
-    <img src="https://img.shields.io/pypi/pyversions/brave-api-python.svg" alt="Python versions" />
+    <img src="https://img.shields.io/pypi/pyversions/brave-api-python.svg?color=fe7039" alt="Python versions" />
   </a>
   <a href="https://github.com/iqbalmh18/brave-api/actions/workflows/ci.yml">
-    <img src="https://github.com/iqbalmh18/brave-api/actions/workflows/ci.yml/badge.svg" alt="CI" />
+    <img src="https://img.shields.io/github/actions/workflow/status/iqbalmh18/brave-api/ci.yml?color=fe7039&label=CI" alt="CI" />
   </a>
   <a href="https://python-semantic-release.readthedocs.io/">
-    <img src="https://img.shields.io/badge/semantic--release-enabled-2a86ba" alt="Semantic release" />
+    <img src="https://img.shields.io/badge/semantic--release-enabled-fe7039" alt="Semantic release" />
   </a>
 </p>
 
