@@ -12,6 +12,14 @@ preserved across releases.
 
 <!-- version list -->
 
+## v1.1.1 (2026-08-16)
+
+### Bug Fixes
+
+- **docs**: Use canonical Read the Docs URL ([#9](https://github.com/iqbalmh18/brave-api/pull/9),
+  [`687ae8c`](https://github.com/iqbalmh18/brave-api/commit/687ae8ce81ead96ba7271aa5235f802023a1064a))
+
+
 ## v1.1.0 (2026-08-16)
 
 ### Chores
