@@ -19,7 +19,7 @@ from ._version import __version__
 from .client import BraveClient
 from .config import ClientConfig
 from .conversation import Conversation
-from .enums import QueryType, StreamEventType, StreamState
+from .enums import QueryType, SearchType, StreamEventType, StreamState
 from .exceptions import (
     BraveAPIError,
     ChallengeRequiredError,
@@ -59,6 +59,7 @@ __all__ = [
     "Infobox",
     "NewsResult",
     "QueryType",
+    "SearchType",
     "ResponseParseError",
     "SearchResult",
     "StreamAbortedError",

@@ -6,7 +6,8 @@ import logging
 import re
 from typing import Any, cast
 
-from ..models import NewsResult, SearchResult, SuggestItem, WebResult
+from ..enums import SearchType
+from ..models import ImageResult, NewsResult, SearchResult, SuggestItem, VideoResult, WebResult
 
 logger = logging.getLogger("brave_api.search_parser")
 
@@ -62,6 +63,14 @@ _RESULT_SNIPPET = re.compile(
 )
 _CITE_URL = re.compile(r"<cite[^>]*>(.*?)</cite>", re.DOTALL)
 _NEWS_ARTICLE = re.compile(r'<div[^>]+class="[^"]*\bnews-article\b[^"]*"[^>]*>')
+_IMAGE_RESULT = re.compile(r'<button[^>]+class="[^"]*\bimage-result\b[^"]*"[^>]*>')
+_NEWS_RESULT = re.compile(
+    r'<div[^>]+class="[^"]*\bsnippet\b[^"]*"[^>]+data-pos="\d+"[^>]+data-type="news"'
+)
+_VIDEO_RESULT = re.compile(
+    r'<div[^>]+class="[^"]*\bsnippet\b[^"]*"[^>]+data-pos="\d+"[^>]+data-type="videos"'
+)
+_NEXT_PAGE = re.compile(r'href="[^"]*[?&](?:amp;)?offset=(\d+)[^"]*"[^>]*>.*?\bNext\b', re.DOTALL)
 
 _HTML_ENTITIES = {
     "&amp;": "&",
@@ -127,6 +136,21 @@ def _extract_age(block: str) -> str | None:
         if match:
             return _strip_tags(match.group(1)) or None
     return None
+
+
+def _extract_attr(block: str, tag: str, attribute: str) -> str | None:
+    pattern = re.compile(rf'<{tag}[^>]+{re.escape(attribute)}=["\']([^"\']+)["\']', re.DOTALL)
+    match = pattern.search(block)
+    return match.group(1).strip() if match else None
+
+
+def _extract_text_by_class(block: str, class_name: str) -> str | None:
+    pattern = re.compile(
+        rf'<(?:span|div)[^>]+class="[^"]*\b{re.escape(class_name)}\b[^"]*"[^>]*>(.*?)</(?:span|div)>',
+        re.DOTALL,
+    )
+    match = pattern.search(block)
+    return _strip_tags(match.group(1)) or None if match else None
 
 
 def _split_into_blocks(
@@ -220,6 +244,97 @@ def _parse_news_results_from_html(html: str) -> list[NewsResult]:
     return results
 
 
+def _parse_news_vertical_results_from_html(html: str) -> list[NewsResult]:
+    results: list[NewsResult] = []
+    seen_urls: set[str] = set()
+    for block in _split_into_blocks(html, _NEWS_RESULT):
+        url = _extract_attr(block, "a", "href")
+        if not url or not url.startswith(("http://", "https://")) or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        thumbnail = _extract_attr(block, "img", "src")
+        title = _extract_text_by_class(block, "title")
+        description = _extract_text_by_class(block, "description")
+        source = _extract_text_by_class(block, "site-name-content")
+        age = _extract_text_by_class(block, "age-snippet")
+        results.append(
+            NewsResult(
+                url=url,
+                title=title,
+                description=description,
+                age=age,
+                thumbnail=thumbnail,
+                source=source,
+            )
+        )
+    return results
+
+
+def _parse_image_results_from_html(html: str) -> list[ImageResult]:
+    results: list[ImageResult] = []
+    seen_urls: set[str] = set()
+
+    for block in _split_into_blocks(html, _IMAGE_RESULT):
+        url = _extract_attr(block, "img", "src")
+        if not url or not url.startswith(("http://", "https://")) or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        title = _extract_attr(block, "img", "alt") or _extract_text_by_class(
+            block, "image-metadata-title"
+        )
+        source = _extract_text_by_class(block, "image-metadata-source")
+        style = _extract_attr(block, "button", "style") or ""
+        width_match = re.search(r"--width:\s*(\d+)", style)
+        height_match = re.search(r"--height:\s*(\d+)", style)
+        results.append(
+            ImageResult(
+                url=url,
+                title=title,
+                thumbnail=url,
+                source=source,
+                width=int(width_match.group(1)) if width_match else None,
+                height=int(height_match.group(1)) if height_match else None,
+            )
+        )
+    return results
+
+
+def _parse_video_results_from_html(html: str) -> list[VideoResult]:
+    results: list[VideoResult] = []
+    seen_urls: set[str] = set()
+
+    for block in _split_into_blocks(html, _VIDEO_RESULT):
+        url = _extract_attr(block, "a", "href")
+        if not url or not url.startswith(("http://", "https://")) or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        thumbnail = _extract_attr(block, "img", "src")
+        duration = _extract_text_by_class(block, "duration")
+        title = _extract_text_by_class(block, "title") or _extract_text_by_class(
+            block, "description"
+        )
+        channel = _extract_text_by_class(block, "site-name-content")
+        results.append(
+            VideoResult(
+                url=url,
+                title=title,
+                thumbnail=thumbnail,
+                duration=duration,
+                channel=channel,
+            )
+        )
+    return results
+
+
+def _has_next_page(html: str) -> bool | None:
+    match = _NEXT_PAGE.search(html)
+    if match:
+        return True
+    if 'class="pagination' in html:
+        return False
+    return None
+
+
 def parse_search_html(html: str, query: str, offset: int = 0) -> SearchResult:
     """Parse the SERP HTML into a :class:`SearchResult`."""
     result = SearchResult(
@@ -227,6 +342,7 @@ def parse_search_html(html: str, query: str, offset: int = 0) -> SearchResult:
         web=_parse_web_results_from_html(html),
         news=_parse_news_results_from_html(html),
         offset=offset,
+        has_more=_has_next_page(html),
     )
     logger.debug(
         "parse_search_html: query=%r offset=%d web=%d news=%d",
@@ -235,6 +351,33 @@ def parse_search_html(html: str, query: str, offset: int = 0) -> SearchResult:
         len(result.web),
         len(result.news),
     )
+    return result
+
+
+def parse_vertical_html(
+    html: str,
+    query: str,
+    *,
+    search_type: SearchType,
+    offset: int = 0,
+) -> SearchResult:
+    """Parse one of Brave's specialized HTML search verticals."""
+    result = SearchResult(
+        query=query,
+        search_type=search_type,
+        offset=offset,
+        has_more=_has_next_page(html),
+    )
+    if search_type is SearchType.IMAGES:
+        result = result.model_copy(update={"images": _parse_image_results_from_html(html)})
+    elif search_type is SearchType.VIDEOS:
+        result = result.model_copy(update={"videos": _parse_video_results_from_html(html)})
+    elif search_type is SearchType.NEWS:
+        result = result.model_copy(update={"news": _parse_news_vertical_results_from_html(html)})
+    elif search_type is SearchType.GOGGLES:
+        result = result.model_copy(update={"web": _parse_web_results_from_html(html)})
+    else:
+        return parse_search_html(html, query=query, offset=offset)
     return result
 
 
@@ -294,4 +437,4 @@ def parse_suggest_json(data: Any, query: str) -> list[SuggestItem]:
     return items
 
 
-__all__ = ["parse_search_html", "parse_suggest_json"]
+__all__ = ["parse_search_html", "parse_suggest_json", "parse_vertical_html"]

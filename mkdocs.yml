@@ -1,0 +1,118 @@
+site_name: brave-api-python
+site_description: Async typed Python client for Brave Search and Brave Ask
+site_url: https://brave-api-python.readthedocs.io
+repo_url: https://github.com/iqbalmh18/brave-api
+repo_name: iqbalmh18/brave-api
+edit_uri: edit/main/docs/
+
+hooks:
+  - docs/hooks.py
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Quickstart: quickstart.md
+  - Guides:
+      - Ask: guides/ask.md
+      - Search: guides/search.md
+      - Conversations: guides/conversations.md
+      - Configuration: guides/configuration.md
+      - MCP server: guides/mcp.md
+  - API Reference: api.md
+  - Examples: examples.md
+  - Development: contributing.md
+  - Changelog: changelog.md
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: id
+          name: Bahasa Indonesia
+          build: true
+          nav_translations:
+            Home: Beranda
+            Getting Started: Mulai
+            Installation: Instalasi
+            Quickstart: Mulai Cepat
+            Guides: Panduan
+            Conversations: Percakapan
+            Configuration: Konfigurasi
+            MCP server: Server MCP
+            Streaming and results: Streaming dan hasil
+            Errors and retries: Error dan retry
+            API Reference: Referensi API
+            Examples: Contoh
+            Development: Pengembangan
+        - locale: zh
+          name: 简体中文
+          build: true
+          nav_translations:
+            Home: 首页
+            Getting Started: 开始使用
+            Installation: 安装
+            Quickstart: 快速开始
+            Guides: 指南
+            Conversations: 对话
+            Configuration: 配置
+            MCP server: MCP 服务
+            Streaming and results: 流式响应与结果
+            Errors and retries: 错误与重试
+            API Reference: API 参考
+            Examples: 示例
+            Development: 开发
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            members_order: source
+            show_root_heading: true
+            show_source: true
+            separate_signature: true
+            inherited_members: true
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist
