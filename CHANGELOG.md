@@ -12,6 +12,33 @@ preserved across releases.
 
 <!-- version list -->
 
+## v1.1.0 (2026-08-16)
+
+### Chores
+
+- Remove comments from workflows and pyproject ([#7](https://github.com/iqbalmh18/brave-api/pull/7),
+  [`7b3c673`](https://github.com/iqbalmh18/brave-api/commit/7b3c6739d49a8a07e493693ff902a1749dabb2fe))
+
+- Update README and SVG banner for improved clarity and design
+  ([`d715cc2`](https://github.com/iqbalmh18/brave-api/commit/d715cc201421dfcc08c7312ad5aff633715536e0))
+
+### Documentation
+
+- Simplify README by removing architecture and general features
+  ([`6d3ef4e`](https://github.com/iqbalmh18/brave-api/commit/6d3ef4efd127f030958ffaa056fe69a84f58c469))
+
+  Removed sections on architecture and general features to streamline the README.
+
+### Features
+
+- Search verticals and documentation ([#8](https://github.com/iqbalmh18/brave-api/pull/8),
+  [`9276298`](https://github.com/iqbalmh18/brave-api/commit/92762982612cf137bd6d502c0db562b948addd59))
+
+  * feat(search): add search verticals and documentation
+
+  * style(docs): align README and docs colors
+
+
 ## v1.0.3 (2026-08-08)
 
 ### Bug Fixes
