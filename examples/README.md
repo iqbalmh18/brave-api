@@ -15,6 +15,7 @@ uv run python examples/quickstart.py
 | `quickstart.py` | Minimal ask and result inspection |
 | `streaming.py` | Real-time event streaming (text, thinking, tools) |
 | `search_suggest.py` | Web search with pagination + autocomplete |
+| `search_verticals.py` | Web, images, news, videos, and Brave Goggles search with pagination |
 | `multi_turn.py` | Resume, follow-up, and regenerate answers |
 | `rich_results.py` | Images, videos, infobox, and follow-ups |
 | `multimodal.py` | Vision mode: attach an image to a query |

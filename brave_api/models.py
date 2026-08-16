@@ -11,7 +11,7 @@ from typing import Any, cast
 
 from pydantic import BaseModel, Field, field_validator
 
-from .enums import StreamEventType, StreamState
+from .enums import SearchType, StreamEventType, StreamState
 
 
 class TokenModel(BaseModel):
@@ -138,24 +138,36 @@ class SearchResult(BaseModel):
     """Result of a single web search against the Brave SERP."""
 
     query: str = Field(description="The query that was searched.")
+    search_type: SearchType = Field(
+        default=SearchType.SEARCH, description="Brave Search vertical used for the request."
+    )
     web: list[WebResult] = Field(
         default_factory=list[WebResult], description="Organic web results."
     )
     news: list[NewsResult] = Field(default_factory=list[NewsResult], description="News results.")
+    images: list[ImageResult] = Field(
+        default_factory=list[ImageResult], description="Image results."
+    )
+    videos: list[VideoResult] = Field(
+        default_factory=list[VideoResult], description="Video results."
+    )
     offset: int = Field(default=0, description="Pagination offset used for the request.")
+    has_more: bool | None = Field(
+        default=None, description="Whether another page is available, when detectable."
+    )
 
     model_config = {"frozen": True}
 
     @property
     def has_results(self) -> bool:
-        return bool(self.web or self.news)
+        return bool(self.web or self.news or self.images or self.videos)
 
     @property
     def urls(self) -> list[str]:
         """Every unique URL across web and news results, in order of appearance."""
         seen: set[str] = set()
         urls: list[str] = []
-        for item in (*self.web, *self.news):
+        for item in (*self.web, *self.news, *self.images, *self.videos):
             if item.url not in seen:
                 seen.add(item.url)
                 urls.append(item.url)

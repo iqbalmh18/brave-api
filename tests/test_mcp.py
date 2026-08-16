@@ -107,6 +107,10 @@ def mock_client() -> AsyncMock:
     client.__aexit__ = AsyncMock(return_value=None)
     client.ask = AsyncMock(return_value=_make_stream_result())
     client.search = AsyncMock(return_value=_make_search_result())
+    client.search_images = AsyncMock(return_value=_make_search_result())
+    client.search_news = AsyncMock(return_value=_make_search_result())
+    client.search_videos = AsyncMock(return_value=_make_search_result())
+    client.search_goggles = AsyncMock(return_value=_make_search_result())
     client.suggest = AsyncMock(return_value=_make_suggest_result())
     return client
 
@@ -129,16 +133,35 @@ class TestCreateServer:
     def test_server_name(self, mcp_server: FastMCP) -> None:
         assert mcp_server.name == "Brave API"
 
-    async def test_three_tools_registered(self, mcp_server: FastMCP) -> None:
+    async def test_search_tools_registered(self, mcp_server: FastMCP) -> None:
         async with Client(mcp_server) as client:
             tools = await client.list_tools()
-        assert {tool.name for tool in tools} == {"ask", "search", "suggest"}
+        assert {tool.name for tool in tools} == {
+            "ask",
+            "search",
+            "search_images",
+            "search_news",
+            "search_videos",
+            "search_goggles",
+            "suggest",
+        }
 
     async def test_tool_descriptions_present(self, mcp_server: FastMCP) -> None:
         async with Client(mcp_server) as client:
             tools = await client.list_tools()
         by_name = {tool.name: tool for tool in tools}
-        assert all(by_name[name].description for name in ("ask", "search", "suggest"))
+        assert all(
+            by_name[name].description
+            for name in (
+                "ask",
+                "search",
+                "search_images",
+                "search_news",
+                "search_videos",
+                "search_goggles",
+                "suggest",
+            )
+        )
 
     async def test_tools_have_readonly_annotation(self, mcp_server: FastMCP) -> None:
         async with Client(mcp_server) as client:
@@ -232,6 +255,15 @@ class TestSearchTool:
         with pytest.raises(Exception) as exc_info:
             await _call(mcp_server, "search", query="test")
         assert "Rate limited" in str(exc_info.value)
+
+    async def test_vertical_tool_forwards_pagination(
+        self, mcp_server: FastMCP, mock_client: AsyncMock
+    ) -> None:
+        await _call(mcp_server, "search_images", query="cats", offset=2, spellcheck=False)
+        call = mock_client.search_images.call_args
+        assert call.args[0] == "cats"
+        assert call.kwargs["offset"] == 2
+        assert call.kwargs["spellcheck"] is False
 
 
 class TestSuggestTool:

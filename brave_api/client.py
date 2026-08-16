@@ -13,22 +13,30 @@ from ._internal.constants import (
     DATA_QUERY_PARAM_NAME,
     DATA_QUERY_PARAM_VALUE,
     PATH_DATA_JSON,
+    PATH_GOGGLES,
+    PATH_IMAGES,
     PATH_NEW,
+    PATH_NEWS,
     PATH_PRIME,
     PATH_RUN_TOOL,
     PATH_SEARCH,
     PATH_STREAM,
     PATH_STREAM_MULTIMODAL,
     PATH_SUGGEST,
+    PATH_VIDEOS,
 )
 from ._internal.crypto import generate_symmetric_key
 from ._internal.http import Transport
 from ._internal.retry import is_http_retryable, retry_async
-from ._internal.search_parser import parse_search_html, parse_suggest_json
+from ._internal.search_parser import (
+    parse_search_html,
+    parse_suggest_json,
+    parse_vertical_html,
+)
 from ._internal.token import find_token
 from .config import ClientConfig
 from .conversation import Conversation, ImageInput
-from .enums import QueryType
+from .enums import QueryType, SearchType
 from .exceptions import (
     ConversationError,
     HTTPStatusError,
@@ -199,6 +207,58 @@ class BraveClient:
         return await self._retry(
             lambda: self._do_search(url, params, headers, query, offset),
             "search",
+        )
+
+    async def search_images(
+        self,
+        query: str,
+        *,
+        offset: int = 0,
+        spellcheck: bool = True,
+        source: str = "web",
+    ) -> SearchResult:
+        """Search Brave's image vertical."""
+        return await self._search_vertical(
+            PATH_IMAGES, query, SearchType.IMAGES, offset, spellcheck, source
+        )
+
+    async def search_news(
+        self,
+        query: str,
+        *,
+        offset: int = 0,
+        spellcheck: bool = True,
+        source: str = "web",
+    ) -> SearchResult:
+        """Search Brave's news vertical."""
+        return await self._search_vertical(
+            PATH_NEWS, query, SearchType.NEWS, offset, spellcheck, source
+        )
+
+    async def search_videos(
+        self,
+        query: str,
+        *,
+        offset: int = 0,
+        spellcheck: bool = True,
+        source: str = "web",
+    ) -> SearchResult:
+        """Search Brave's video vertical."""
+        return await self._search_vertical(
+            PATH_VIDEOS, query, SearchType.VIDEOS, offset, spellcheck, source
+        )
+
+    async def search_goggles(
+        self,
+        query: str,
+        *,
+        offset: int = 0,
+        spellcheck: bool = True,
+        source: str = "web",
+    ) -> SearchResult:
+        """Search Brave using the Goggles vertical."""
+        return await self._search_vertical(
+            PATH_GOGGLES, query, SearchType.GOGGLES, offset, spellcheck, source
         )
 
     async def suggest(
@@ -471,6 +531,50 @@ class BraveClient:
     ) -> SearchResult:
         response = await self._transport.request("GET", url, params=params, headers=headers)
         return parse_search_html(response.text, query=query, offset=offset)
+
+    async def _search_vertical(
+        self,
+        path: str,
+        query: str,
+        search_type: SearchType,
+        offset: int,
+        spellcheck: bool,
+        source: str,
+    ) -> SearchResult:
+        url = f"{self._config.base_url}{path}"
+        params: dict[str, str] = {"q": query, "source": source}
+        if offset > 0:
+            params["offset"] = str(offset)
+        if not spellcheck:
+            params["spellcheck"] = "0"
+        headers = self._transport.build_headers(
+            referer_suffix=PATH_PRIME,
+            accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            extra={
+                "sec-fetch-dest": "document",
+                "sec-fetch-mode": "navigate",
+                "sec-fetch-site": "same-origin",
+                "accept-encoding": "gzip, deflate",
+            },
+        )
+        return await self._retry(
+            lambda: self._do_vertical_search(url, params, headers, query, search_type, offset),
+            f"search_{search_type.value}",
+        )
+
+    async def _do_vertical_search(
+        self,
+        url: str,
+        params: dict[str, str],
+        headers: dict[str, str],
+        query: str,
+        search_type: SearchType,
+        offset: int,
+    ) -> SearchResult:
+        response = await self._transport.request("GET", url, params=params, headers=headers)
+        return parse_vertical_html(
+            response.text, query=query, search_type=search_type, offset=offset
+        )
 
     async def _do_suggest(
         self,

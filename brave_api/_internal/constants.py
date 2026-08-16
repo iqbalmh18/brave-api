@@ -40,6 +40,10 @@ PATH_STREAM: Final[str] = "/api/tap/v1/stream"
 PATH_STREAM_MULTIMODAL: Final[str] = "/api/tap/v1/stream_multimodal"
 PATH_RUN_TOOL: Final[str] = "/api/tap/v1/run_tool"
 PATH_SEARCH: Final[str] = "/search"
+PATH_IMAGES: Final[str] = "/images"
+PATH_NEWS: Final[str] = "/news"
+PATH_VIDEOS: Final[str] = "/videos"
+PATH_GOGGLES: Final[str] = "/goggles"
 PATH_SUGGEST: Final[str] = "/api/suggest"
 
 DATA_QUERY_PARAM_NAME: Final[str] = "x-sveltekit-invalidated"
@@ -82,6 +86,10 @@ __all__ = [
     "PATH_PRIME",
     "PATH_RUN_TOOL",
     "PATH_SEARCH",
+    "PATH_IMAGES",
+    "PATH_NEWS",
+    "PATH_VIDEOS",
+    "PATH_GOGGLES",
     "PATH_STREAM",
     "PATH_STREAM_MULTIMODAL",
     "PATH_SUGGEST",

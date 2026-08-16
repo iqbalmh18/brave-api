@@ -257,6 +257,18 @@ class TestSearch:
         assert url.endswith("/search")
         assert params == {"q": "rust", "source": "web", "offset": "1", "spellcheck": "0"}
 
+    async def test_vertical_search_methods_use_expected_routes(self) -> None:
+        transport = FakeTransport()
+        client = _client(transport)
+        await client.search_images("cats", offset=1)
+        assert transport.requests[-1][1].endswith("/images")
+        await client.search_news("cats", offset=1)
+        assert transport.requests[-1][1].endswith("/news")
+        await client.search_videos("cats", offset=1)
+        assert transport.requests[-1][1].endswith("/videos")
+        await client.search_goggles("cats", offset=1)
+        assert transport.requests[-1][1].endswith("/goggles")
+
 
 class TestSuggest:
     async def test_suggest_returns_suggest_result(self) -> None:

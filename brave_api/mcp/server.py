@@ -39,6 +39,8 @@ Available tools:
               answer with citations, images, videos, and follow-up suggestions.
   • search  — Perform a Brave Search query and retrieve structured web and
               news results (SERP, no AI answer).
+  • search_images, search_news, search_videos, search_goggles — Search a
+              specific Brave Search vertical with structured results.
   • suggest — Fetch autocomplete suggestions for a partial query, including
               rich entity suggestions with thumbnails.
 
@@ -154,7 +156,15 @@ def create_server(config: ClientConfig | None = None) -> FastMCP:
         instructions=_INSTRUCTIONS,
         lifespan=_lifespan,
     )
-    for fn in (_tools.ask, _tools.search, _tools.suggest):
+    for fn in (
+        _tools.ask,
+        _tools.search,
+        _tools.search_images,
+        _tools.search_news,
+        _tools.search_videos,
+        _tools.search_goggles,
+        _tools.suggest,
+    ):
         mcp.add_tool(fn)
     return mcp
 

@@ -5,6 +5,16 @@ from __future__ import annotations
 from enum import StrEnum
 
 
+class SearchType(StrEnum):
+    """Brave Search vertical used for a search request."""
+
+    SEARCH = "search"
+    IMAGES = "images"
+    NEWS = "news"
+    VIDEOS = "videos"
+    GOGGLES = "goggles"
+
+
 class QueryType(StrEnum):
     """How the Brave AI endpoint should treat the query."""
 

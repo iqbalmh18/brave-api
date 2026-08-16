@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from brave_api._internal.search_parser import parse_search_html, parse_suggest_json
+from brave_api._internal.search_parser import (
+    parse_search_html,
+    parse_suggest_json,
+    parse_vertical_html,
+)
+from brave_api.enums import SearchType
 
 _SERP_HTML = """
 <html>
@@ -71,6 +76,38 @@ class TestSearchHtml:
         assert result.web == []
         assert result.news == []
         assert not result.has_results
+
+    def test_parses_images_vertical(self) -> None:
+        html = (
+            '<button class="image-result" style="--width: 400; --height: 300;">'
+            '<img src="https://imgs.example/image.jpg" alt="An image">'
+            '<span class="image-metadata-source">example.com</span>'
+            '<span class="image-metadata-title">An image</span></button>'
+        )
+        result = parse_vertical_html(html, "cats", search_type=SearchType.IMAGES)
+        assert result.search_type is SearchType.IMAGES
+        assert result.images[0].url == "https://imgs.example/image.jpg"
+        assert result.images[0].width == 400
+        assert result.images[0].source == "example.com"
+
+    def test_parses_videos_vertical(self) -> None:
+        html = (
+            '<div class="snippet" data-pos="0" data-type="videos">'
+            '<a class="thumbnail"><img src="https://img.example/thumb.jpg"></a>'
+            '<a href="https://video.example/watch/1">'
+            '<div class="title">Video title</div><div class="duration">01:22</div>'
+            '<div class="site-name-content">Example Channel</div></a></div>'
+        )
+        result = parse_vertical_html(html, "cats", search_type=SearchType.VIDEOS)
+        assert result.videos[0].url == "https://video.example/watch/1"
+        assert result.videos[0].title == "Video title"
+        assert result.videos[0].duration == "01:22"
+
+    def test_parses_goggles_as_web_results(self) -> None:
+        result = parse_vertical_html(_SERP_HTML, "python", search_type=SearchType.GOGGLES, offset=2)
+        assert result.search_type is SearchType.GOGGLES
+        assert result.offset == 2
+        assert len(result.web) == 2
 
 
 class TestSuggestJson:
