@@ -1,7 +1,7 @@
 # API 参考
 
 完整 API 参考由 source code 中的类型注解和 docstring 自动生成。请访问
-[English API Reference](https://brave-api-python.readthedocs.io/api/)，查看完整的
+[English API Reference](https://brave-api.readthedocs.io/api/)，查看完整的
 class、method、model、enum 和 exception 列表。
 
 主要范围：

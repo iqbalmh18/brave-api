@@ -33,7 +33,7 @@ An async Python client for <a href="https://search.brave.com">Brave Search</a>, 
 ## Documentation
 
 The complete documentation is available at
-[brave-api-python.readthedocs.io](https://brave-api-python.readthedocs.io/).
+[brave-api.readthedocs.io](https://brave-api.readthedocs.io/).
 
 It includes detailed guides, configuration, MCP setup, examples, error
 handling, and the generated API reference.
@@ -160,7 +160,7 @@ async with BraveClient(config) as client:
     result = await client.search("berita teknologi")
 ```
 
-See the [configuration guide](https://brave-api-python.readthedocs.io/en/latest/guides/configuration/)
+See the [configuration guide](https://brave-api.readthedocs.io/en/latest/guides/configuration/)
 for all supported options.
 
 ## MCP server
@@ -213,7 +213,7 @@ uv run pyright
 ```
 
 For API details, error handling, conversations, and complete MCP configuration,
-see the [full documentation](https://brave-api-python.readthedocs.io/).
+see the [full documentation](https://brave-api.readthedocs.io/).
 
 ## Star History
 
