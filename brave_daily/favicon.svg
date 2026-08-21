@@ -1,22 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">brave-api</title>
-  <desc id="desc">Orange search signal on a dark brave-api background.</desc>
-  <defs>
-    <linearGradient id="orange" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D95321" />
-      <stop offset="0.55" stop-color="#FE7039" />
-      <stop offset="1" stop-color="#FFB088" />
-    </linearGradient>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="1.5" result="blur" />
-      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-    </filter>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="#0D1117" />
-  <path d="M16 31a16 16 0 0 1 28-10" fill="none" stroke="#30363D" stroke-width="2" />
-  <path d="M48 33a16 16 0 0 1-28 10" fill="none" stroke="#30363D" stroke-width="2" />
-  <circle cx="30" cy="30" r="13" fill="#161B22" stroke="url(#orange)" stroke-width="3" filter="url(#glow)" />
-  <path d="m40 40 10 10" stroke="url(#orange)" stroke-width="5" stroke-linecap="round" />
-  <circle cx="30" cy="30" r="4" fill="#FFB088" />
-  <path d="M30 18v24M18 30h24" stroke="#FE7039" stroke-opacity=".22" stroke-width="1" />
+  <title id="title">brave-api B icon</title>
+  <desc id="desc">White letter B on a Brave orange background.</desc>
+  <rect width="64" height="64" rx="16" fill="#FE7039" />
+  <text x="32" y="46" text-anchor="middle" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800" letter-spacing="-3">B</text>
 </svg>

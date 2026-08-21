@@ -142,7 +142,9 @@ function renderPulse() {
       <div class="intel-brief-text"><p>${esc(brief)}</p></div>
     </div>
     <div class="section-header"><h2>Intelligence Domains</h2><span>${domains.length} active domains</span></div>
-    <div class="card-grid">
+    <div class="domain-slider" aria-label="Intelligence domains slider">
+      <button class="slider-control slider-prev" type="button" data-slider-direction="prev" aria-label="Previous intelligence domain">‹</button>
+      <div class="card-grid">
   `;
 
   for (const domain of domains) {
@@ -183,7 +185,7 @@ function renderPulse() {
     }
     html += `</div></div></article>`;
   }
-  html += `</div>`;
+  html += `</div><button class="slider-control slider-next" type="button" data-slider-direction="next" aria-label="Next intelligence domain">›</button></div>`;
   return html;
 }
 
@@ -431,6 +433,27 @@ function renderModule(mod) {
 
 function bindModuleInteractions(mod) {
   if (mod === "pulse") {
+    const slider = $(".domain-slider .card-grid");
+    const previousButton = $(".domain-slider .slider-prev");
+    const nextButton = $(".domain-slider .slider-next");
+
+    const updateSliderControls = () => {
+      if (!slider || !previousButton || !nextButton) return;
+      const maxScrollLeft = slider.scrollWidth - slider.clientWidth;
+      previousButton.hidden = maxScrollLeft <= 1 || slider.scrollLeft <= 1;
+      nextButton.hidden = maxScrollLeft <= 1 || slider.scrollLeft >= maxScrollLeft - 1;
+    };
+
+    $$(".domain-slider .slider-control").forEach(button => {
+      button.addEventListener("click", () => {
+        const direction = button.dataset.sliderDirection === "next" ? 1 : -1;
+        slider?.scrollBy({ left: direction * (slider.clientWidth * 0.82), behavior: "smooth" });
+      });
+    });
+    slider?.addEventListener("scroll", updateSliderControls, { passive: true });
+    window.addEventListener("resize", updateSliderControls, { passive: true });
+    updateSliderControls();
+
     $$(".intel-card").forEach(card => {
       const handler = () => openPulseDetail(card.dataset.domain);
       card.addEventListener("click", handler);
