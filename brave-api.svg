@@ -36,6 +36,9 @@
         --text: #C9D1D9;
         --muted: #8B949E;
         --grid: #C9D1D9;
+        --ask-bg: #211711;
+        --ask-border: #5D2E1D;
+        --ask-text: #FFB088;
       }
 
       @media (prefers-color-scheme: light) {
@@ -48,6 +51,9 @@
           --text: #1F2328;
           --muted: #656D76;
           --grid: #57606A;
+          --ask-bg: #FFF1EB;
+          --ask-border: #FE7039;
+          --ask-text: #D95321;
         }
       }
 
@@ -92,8 +98,8 @@
     <path d="M48 108V164H390V108" stroke="#FE7039" stroke-opacity=".22" stroke-width="1" stroke-dasharray="3 8"/>
 
     <g class="mono" font-size="12">
-      <rect x="25" y="185" width="118" height="43" rx="8" fill="#211711" stroke="#5D2E1D"/>
-      <text x="39" y="203" fill="#FFB088">ask()</text>
+      <rect x="25" y="185" width="118" height="43" rx="8" fill="var(--ask-bg)" stroke="var(--ask-border)"/>
+      <text x="39" y="203" fill="var(--ask-text)">ask()</text>
       <text x="39" y="218" fill="#8B949E">streaming</text>
       <rect x="161" y="185" width="118" height="43" rx="8" fill="var(--surface-strong)" stroke="var(--border)"/>
       <text x="175" y="203" fill="var(--text)">search()</text>
@@ -120,8 +126,8 @@
 
   <g transform="translate(80 266)">
     <g class="mono" font-size="14" font-weight="700">
-      <rect width="92" height="34" rx="17" fill="#211711" stroke="#FE7039"/>
-      <text x="46" y="22" text-anchor="middle" fill="#FFB088">ASK</text>
+      <rect width="92" height="34" rx="17" fill="var(--ask-bg)" stroke="var(--ask-border)"/>
+      <text x="46" y="22" text-anchor="middle" fill="var(--ask-text)">ASK</text>
       <rect x="106" width="108" height="34" rx="17" fill="var(--surface)" stroke="var(--border)"/>
       <text x="160" y="22" text-anchor="middle" fill="var(--text)">SEARCH</text>
       <rect x="228" width="92" height="34" rx="17" fill="var(--surface)" stroke="var(--border)"/>
