@@ -1,5 +1,8 @@
 # Search API
 
+Search returns structured SERP data, not an AI answer. Every method returns the
+same `SearchResult` envelope; populated fields depend on the selected vertical.
+
 ## Vertical search
 
 All search methods return the same `SearchResult` envelope:
@@ -33,6 +36,9 @@ print(page2.offset, page2.has_more)
 
 Use `spellcheck=False` for exact keyword matching.
 
+`offset` is a page number, not an item count: `0` is the first page, `1` the
+second, and so on.
+
 ## Autocomplete
 
 ```python
@@ -40,3 +46,6 @@ suggestions = await client.suggest("pyth")
 for item in suggestions.suggestions:
     print(item.text, item.entity_type)
 ```
+
+With `rich=False`, suggestions contain only basic text and do not request extra
+entity data.

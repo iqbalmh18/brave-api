@@ -1,5 +1,8 @@
 # Ask API
 
+Ask sends a question to Brave AI. Use `ask()` when the application needs the
+final result, or `ask_stream()` when the UI should display text as it arrives.
+
 ## Blocking answer
 
 `ask()` returns a complete `StreamResult` containing the answer, sources,
@@ -13,6 +16,9 @@ print(result.text)
 print(result.urls)
 print(result.followups)
 ```
+
+Common fields are `text`, `urls`, `images`, `videos`, and `followups`. A query
+does not necessarily produce every field.
 
 ## Streaming
 
@@ -36,3 +42,6 @@ async with BraveClient() as client:
         image=Path("photo.jpg"),
     )
 ```
+
+`image` can be a `Path` or another supported `ImageInput`. For follow-up
+questions, see [Conversations](conversations.md).

@@ -1,462 +1,135 @@
-<svg width="1280" height="400" viewBox="0 0 1280 400" xmlns="http://www.w3.org/2000/svg">
+<svg width="1280" height="400" viewBox="0 0 1280 400" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">brave-api-python animated banner</title>
+  <desc id="desc">A dark GitHub-style banner with an orange animated search network.</desc>
+
   <defs>
-    <!-- Background -->
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0c0b0d"/>
-      <stop offset="55%" stop-color="#141213"/>
-      <stop offset="100%" stop-color="#0c0b0d"/>
+    <linearGradient id="background" x1="0" y1="0" x2="1280" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="var(--bg-start)"/>
+      <stop offset="1" stop-color="var(--bg-end)"/>
     </linearGradient>
-
-    <!-- Orange accents -->
-    <linearGradient id="orangeFade" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#fe7039" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#ff9b76" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
+    <linearGradient id="orange" x1="80" y1="0" x2="1120" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D95321"/>
+      <stop offset="0.5" stop-color="#FE7039"/>
+      <stop offset="1" stop-color="#FFB088"/>
     </linearGradient>
-
-    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ff9b76"/>
-      <stop offset="100%" stop-color="#d95321"/>
-    </linearGradient>
-
-    <!-- Brave-inspired shield gradients -->
-    <linearGradient id="braveShield" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ff9b76"/>
-      <stop offset="48%" stop-color="#fe7039"/>
-      <stop offset="100%" stop-color="#b9431c"/>
-    </linearGradient>
-
-    <linearGradient id="braveShieldDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d95321"/>
-      <stop offset="100%" stop-color="#9f3218"/>
-    </linearGradient>
-
-    <linearGradient id="lionFace" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fff0e8"/>
-      <stop offset="100%" stop-color="#ffd0bd"/>
-    </linearGradient>
-
-    <radialGradient id="glowOrange" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fe7039" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
+    <radialGradient id="glow">
+      <stop stop-color="#FE7039" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FE7039" stop-opacity="0"/>
     </radialGradient>
-
-    <radialGradient id="glowRed" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#d95321" stop-opacity="0.16"/>
-      <stop offset="100%" stop-color="#d95321" stop-opacity="0"/>
-    </radialGradient>
-
-    <radialGradient id="glowIcon" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fe7039" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#fe7039" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Blueprint grid -->
-    <pattern id="gridMinor" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path
-        d="M 32 0 L 0 0 0 32"
-        fill="none"
-        stroke="#ffffff"
-        stroke-opacity="0.045"
-        stroke-width="1"
-      />
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" stroke="var(--grid)" stroke-opacity="0.08"/>
     </pattern>
-
-    <pattern id="gridMajor" width="160" height="160" patternUnits="userSpaceOnUse">
-      <path
-        d="M 160 0 L 0 0 0 160"
-        fill="none"
-        stroke="#ffffff"
-        stroke-opacity="0.09"
-        stroke-width="1"
-      />
-      <path
-        d="M 0 0 L 6 0 M 0 0 L 0 6"
-        stroke="#fe7039"
-        stroke-opacity="0.55"
-        stroke-width="1.4"
-      />
-    </pattern>
-
+    <filter id="blur" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
     <style>
-      .title {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        font-weight: 800;
+      :root {
+        --bg-start: #0D1117;
+        --bg-end: #161B22;
+        --surface: #161B22;
+        --surface-strong: #0D1117;
+        --border: #30363D;
+        --text: #C9D1D9;
+        --muted: #8B949E;
+        --grid: #C9D1D9;
       }
 
-      .mono {
-        font-family: 'Consolas', 'Courier New', monospace;
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg-start: #FFFFFF;
+          --bg-end: #F6F8FA;
+          --surface: #FFFFFF;
+          --surface-strong: #F6F8FA;
+          --border: #D0D7DE;
+          --text: #1F2328;
+          --muted: #656D76;
+          --grid: #57606A;
+        }
       }
 
-      .sub {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        font-weight: 400;
-      }
+      .sans { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     </style>
   </defs>
 
+  <rect width="1280" height="400" rx="18" fill="url(#background)"/>
+  <rect width="1280" height="400" rx="18" fill="url(#grid)"/>
+  <ellipse cx="1080" cy="90" rx="300" ry="220" fill="url(#glow)" filter="url(#blur)">
+    <animate attributeName="opacity" values="0.55;0.9;0.55" dur="5s" repeatCount="indefinite"/>
+  </ellipse>
 
-  <!-- ========================================================= -->
-  <!-- BACKGROUND -->
-  <!-- ========================================================= -->
+  <rect x="0" y="0" width="1280" height="3" rx="1.5" fill="url(#orange)"/>
+  <rect x="0" y="397" width="1280" height="3" rx="1.5" fill="url(#orange)"/>
 
-  <rect width="1280" height="400" fill="url(#bg)"/>
-  <rect width="1280" height="400" fill="url(#gridMinor)"/>
-  <rect width="1280" height="400" fill="url(#gridMajor)"/>
+  <!-- Clear animated data pipeline -->
+  <g transform="translate(760 64)">
+    <rect width="440" height="260" rx="16" fill="var(--surface)" stroke="var(--border)"/>
+    <text x="26" y="31" class="mono" font-size="12" letter-spacing="1.5" fill="var(--muted)">LIVE REQUEST PIPELINE</text>
+    <circle cx="403" cy="25" r="5" fill="#FE7039">
+      <animate attributeName="opacity" values="1;.3;1" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
 
-  <!-- Ambient glow -->
-  <circle cx="150" cy="70" r="240" fill="url(#glowOrange)"/>
-  <circle cx="1180" cy="360" r="260" fill="url(#glowRed)"/>
+    <g class="mono" font-size="11">
+      <text x="34" y="70" fill="var(--muted)">QUERY</text>
+      <text x="178" y="70" fill="var(--muted)">ENGINE</text>
+      <text x="326" y="70" fill="var(--muted)">RESULT</text>
+    </g>
+    <path d="M48 108H390" stroke="var(--border)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M48 108H390" stroke="#FE7039" stroke-width="3" stroke-linecap="round" stroke-dasharray="12 18">
+      <animate attributeName="stroke-dashoffset" from="0" to="-60" dur="1.2s" repeatCount="indefinite"/>
+    </path>
+    <g fill="#FE7039" filter="url(#softGlow)">
+      <circle cx="48" cy="108" r="8"/>
+      <circle cx="220" cy="108" r="8">
+        <animate attributeName="r" values="7;12;7" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="390" cy="108" r="8"/>
+    </g>
+    <path d="M48 108V164H390V108" stroke="#FE7039" stroke-opacity=".22" stroke-width="1" stroke-dasharray="3 8"/>
 
-  <!-- Top / bottom accent -->
-  <rect x="0" y="0" width="1280" height="3" fill="url(#orangeFade)"/>
-  <rect x="0" y="397" width="1280" height="3" fill="url(#orangeFade)"/>
-
-
-  <!-- ========================================================= -->
-  <!-- REPOSITORY PATH -->
-  <!-- ========================================================= -->
-
-  <g transform="translate(80, 60)">
-    <circle cx="0" cy="-5" r="4" fill="#fe7039"/>
-
-    <text
-      x="14"
-      y="0"
-      class="mono"
-      font-size="14"
-      fill="#8f8f97"
-      letter-spacing="0.5"
-    >
-      github.com/iqbalmh18/brave-api
-    </text>
+    <g class="mono" font-size="12">
+      <rect x="25" y="185" width="118" height="43" rx="8" fill="#211711" stroke="#5D2E1D"/>
+      <text x="39" y="203" fill="#FFB088">ask()</text>
+      <text x="39" y="218" fill="#8B949E">streaming</text>
+      <rect x="161" y="185" width="118" height="43" rx="8" fill="var(--surface-strong)" stroke="var(--border)"/>
+      <text x="175" y="203" fill="var(--text)">search()</text>
+      <text x="175" y="218" fill="var(--muted)">typed SERP</text>
+      <rect x="297" y="185" width="118" height="43" rx="8" fill="var(--surface-strong)" stroke="var(--border)"/>
+      <text x="311" y="203" fill="var(--text)">MCP</text>
+      <text x="311" y="218" fill="var(--muted)">ready</text>
+    </g>
+    <rect x="25" y="145" width="72" height="2" rx="1" fill="#FE7039">
+      <animate attributeName="x" values="25;343;25" dur="3.5s" repeatCount="indefinite"/>
+    </rect>
   </g>
 
-
-  <!-- ========================================================= -->
-  <!-- TITLE -->
-  <!-- ========================================================= -->
-
-  <text
-    x="78"
-    y="156"
-    class="title"
-    font-size="62"
-    fill="url(#titleGrad)"
-  >
-    Brave API
-  </text>
-
-
-  <!-- ========================================================= -->
-  <!-- SUBTITLE -->
-  <!-- ========================================================= -->
-
-  <text
-    x="80"
-    y="194"
-    class="sub"
-    font-size="17.5"
-    fill="#c7c5c6"
-  >
-    An async Python client for Brave Search, providing streaming AI answers and structured web search
-  </text>
-  <text
-    x="80"
-    y="224"
-    class="sub"
-    font-size="17.5"
-    fill="#c7c5c6"
-  >
-    in a single, typed interface — with a built-in Model Context Protocol (MCP) server.
-  </text>
-
-
-  <!-- Divider -->
-  <rect
-    x="80"
-    y="238"
-    width="1000"
-    height="1"
-    fill="#ffffff"
-    fill-opacity="0.09"
-  />
-
-
-  <!-- ========================================================= -->
-  <!-- FEATURE BADGES -->
-  <!-- ========================================================= -->
-
-  <g class="mono" font-size="15" font-weight="700">
-
-    <g transform="translate(80, 250)">
-      <rect
-        width="102"
-        height="36"
-        rx="18"
-        fill="#17140f"
-        stroke="#fe7039"
-        stroke-width="1.3"
-      />
-      <text
-        x="51"
-        y="23"
-        text-anchor="middle"
-        fill="#ff9b76"
-      >
-        Ask
-      </text>
-    </g>
-
-    <g transform="translate(196, 250)">
-      <rect
-        width="96"
-        height="36"
-        rx="18"
-        fill="#17140f"
-        stroke="#fe7039"
-        stroke-width="1.3"
-      />
-      <text
-        x="48"
-        y="23"
-        text-anchor="middle"
-        fill="#ff9b76"
-      >
-        Search
-      </text>
-    </g>
-
-    <g transform="translate(306, 250)">
-      <rect
-        width="80"
-        height="36"
-        rx="18"
-        fill="#17140f"
-        stroke="#fe7039"
-        stroke-width="1.3"
-      />
-      <text
-        x="40"
-        y="23"
-        text-anchor="middle"
-        fill="#ff9b76"
-      >
-        MCP
-      </text>
-    </g>
-
-    <g transform="translate(400, 250)">
-      <rect
-        width="110"
-        height="36"
-        rx="18"
-        fill="#17140f"
-        stroke="#fe7039"
-        stroke-width="1.3"
-      />
-      <text
-        x="55"
-        y="23"
-        text-anchor="middle"
-        fill="#ff9b76"
-      >
-        Streaming
-      </text>
-    </g>
-
-    <g transform="translate(524, 250)">
-      <rect
-        width="86"
-        height="36"
-        rx="18"
-        fill="#17140f"
-        stroke="#fe7039"
-        stroke-width="1.3"
-      />
-      <text
-        x="43"
-        y="23"
-        text-anchor="middle"
-        fill="#ff9b76"
-      >
-        Async
-      </text>
-    </g>
-
+  <g transform="translate(80 67)">
+    <circle cx="0" cy="-5" r="4" fill="#FE7039">
+      <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="15" y="0" class="mono" font-size="14" letter-spacing="0.5" fill="var(--muted)">github.com/iqbalmh18/brave-api</text>
   </g>
 
+  <text x="78" y="158" class="sans" font-size="62" font-weight="800" fill="url(#orange)">Brave API</text>
+  <text x="80" y="198" class="sans" font-size="18" fill="var(--text)">Async Python client for Brave Search and Brave Ask</text>
+  <text x="80" y="228" class="sans" font-size="18" fill="var(--muted)">typed results · streaming answers · built-in MCP server</text>
 
-  <!-- ========================================================= -->
-  <!-- TAGLINE -->
-  <!-- ========================================================= -->
-
-  <text
-    x="80"
-    y="322"
-    class="sub"
-    font-size="14.5"
-    fill="#8a8890"
-  >
-  Search the web. Ask anything. No Login. No API key. No Bullshit.
-  </text>
-
-
-  <!-- ========================================================= -->
-  <!-- FOOTER -->
-  <!-- ========================================================= -->
-
-  <rect
-    x="80"
-    y="348"
-    width="1120"
-    height="1"
-    fill="#ffffff"
-    fill-opacity="0.09"
-  />
-
-  <g transform="translate(80, 378)">
-    <text
-      class="sub"
-      font-size="14"
-      fill="#77757c"
-    >
-      build with
-    </text>
-
-    <path
-      d="M8 4
-         C6 -0.5, -0.5 -0.5, -0.5 4.5
-         C-0.5 9, 8 15, 8 15
-         C8 15, 16.5 9, 16.5 4.5
-         C16.5 -0.5, 10 -0.5, 8 4 Z"
-      fill="#fe7039"
-      transform="translate(72,-11)"
-    />
-
-    <text
-      x="96"
-      class="mono"
-      font-size="14"
-      fill="#ff9b76"
-      font-weight="700"
-    >
-      iqbalmh18
-    </text>
+  <g transform="translate(80 266)">
+    <g class="mono" font-size="14" font-weight="700">
+      <rect width="92" height="34" rx="17" fill="#211711" stroke="#FE7039"/>
+      <text x="46" y="22" text-anchor="middle" fill="#FFB088">ASK</text>
+      <rect x="106" width="108" height="34" rx="17" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="160" y="22" text-anchor="middle" fill="var(--text)">SEARCH</text>
+      <rect x="228" width="92" height="34" rx="17" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="274" y="22" text-anchor="middle" fill="var(--text)">MCP</text>
+    </g>
+    <text y="78" class="mono" font-size="14" fill="var(--muted)">$ uv add brave-api-python</text>
+    <rect x="226" y="65" width="8" height="18" fill="#FE7039">
+      <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+    </rect>
   </g>
-
-<!-- ========================================================= -->
-<!-- BRAVE-STYLE SHIELD ICON -->
-<!-- ========================================================= -->
-
-<g transform="translate(1128, 156)">
-
-  <!-- Ambient glow -->
-  <circle
-    cx="0"
-    cy="0"
-    r="108"
-    fill="url(#glowIcon)"
-  />
-
-  <!-- Outer shield -->
-  <path
-    d="
-      M 0 -88
-      C 31 -84 58 -74 78 -58
-      L 70 8
-      C 67 42 51 68 27 85
-      C 16 93 6 98 0 101
-      C -6 98 -16 93 -27 85
-      C -51 68 -67 42 -70 8
-      L -78 -58
-      C -58 -74 -31 -84 0 -88
-      Z
-    "
-    fill="url(#braveShield)"
-  />
-
-  <!-- Inner shield -->
-  <path
-    d="
-      M 0 -69
-      C 24 -66 45 -58 61 -45
-      L 54 7
-      C 51 33 40 53 21 68
-      C 12 75 5 80 0 82
-      C -5 80 -12 75 -21 68
-      C -40 53 -51 33 -54 7
-      L -61 -45
-      C -45 -58 -24 -66 0 -69
-      Z
-    "
-    fill="#171310"
-  />
-
-  <!-- Shield center facet -->
-  <path
-    d="
-      M 0 -69
-      C 24 -66 45 -58 61 -45
-      L 54 7
-      C 51 33 40 53 21 68
-      C 12 75 5 80 0 82
-      Z
-    "
-    fill="url(#braveShieldDark)"
-    opacity="0.45"
-  />
-
-  <!-- Left facet -->
-  <path
-    d="
-      M 0 -69
-      C -24 -66 -45 -58 -61 -45
-      L -54 7
-      C -51 33 -40 53 -21 68
-      C -12 75 -5 80 0 82
-      Z
-    "
-    fill="#ff9b76"
-    opacity="0.25"
-  />
-
-  <!-- Shield top highlight -->
-  <path
-    d="
-      M -52 -58
-      C -35 -69 -18 -75 0 -78
-      C 18 -75 35 -69 52 -58
-    "
-    fill="none"
-    stroke="#ffb99e"
-    stroke-width="2"
-    stroke-opacity="0.7"
-    stroke-linecap="round"
-  />
-
-  <!-- Center vertical accent -->
-  <path
-    d="
-      M 0 -62
-      L 0 69
-    "
-    stroke="#fe7039"
-    stroke-width="1.2"
-    stroke-opacity="0.18"
-  />
-
-  <!-- Bottom shield accent -->
-  <path
-    d="
-      M -30 68
-      C -18 77 -7 83 0 87
-      C 7 83 18 77 30 68
-    "
-    fill="none"
-    stroke="#ff9b76"
-    stroke-width="1.5"
-    stroke-opacity="0.55"
-  />
-</g>
 </svg>

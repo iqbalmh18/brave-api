@@ -1,5 +1,8 @@
 # Examples
 
+The examples below are runnable files in the repository. Run them from the
+project root with `uv run`; some require an internet connection.
+
 Runnable examples are available in `examples/`:
 
 | File | Topic |
@@ -16,3 +19,6 @@ Runnable examples are available in `examples/`:
 ```bash
 uv run python examples/search_verticals.py
 ```
+
+Beginners should start with `quickstart.py`, then try `search_verticals.py`,
+`streaming.py`, and `multi_turn.py`.

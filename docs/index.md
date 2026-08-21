@@ -1,16 +1,19 @@
 # brave-api-python
 
-Async, typed Python client for Brave Search and Brave Ask, with a built-in
-Model Context Protocol (MCP) server.
+<img src="../brave-api.svg" alt="Adaptive animated brave-api-python banner" />
+
+`brave-api-python` is an asynchronous, typed Python client for Brave Search and
+Brave Ask. It also provides an MCP server so AI applications can call Brave
+search as tools.
 
 ## Features
 
-- Blocking and streaming AI answers
-- Multimodal and multi-turn conversations
-- Structured web, images, news, videos, and Brave Goggles search
-- Typed immutable Pydantic models
-- Retry, proxy rotation, and consistent exceptions
-- MCP tools for local and HTTP deployments
+- Complete (`ask`) or incremental (`ask_stream`) AI answers
+- Multi-turn conversations and image input
+- Structured web, image, news, video, and Brave Goggles results
+- Typed Pydantic models that are immutable after creation
+- Automatic retries, proxy rotation, timeouts, and consistent exceptions
+- MCP over stdio or HTTP
 
 ## Quick install
 
@@ -18,7 +21,7 @@ Model Context Protocol (MCP) server.
 uv add brave-api-python
 ```
 
-## Minimal usage
+The following example is enough to try both APIs:
 
 ```python
 import asyncio
@@ -39,5 +42,17 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-See the guides for complete usage and the API Reference for every public
-class, method, model, enum, and exception.
+All network operations are asynchronous. Use `async with` so the HTTP session
+is opened and closed safely.
+
+## Learning path
+
+- [Installation](installation.md): install with `uv`, `pip`, or from source.
+- [Quickstart](quickstart.md): the smallest runnable examples.
+- [Ask API](guides/ask.md): streaming, images, and question options.
+- [Search API](guides/search.md): verticals, pagination, and autocomplete.
+- [Configuration](guides/configuration.md): language, retries, timeouts, and proxies.
+- [Troubleshooting](guides/troubleshooting.md): lifecycle, errors, and reliability.
+- [Conversations](guides/conversations.md): follow-up questions.
+- [MCP server](guides/mcp.md): use the package from an MCP application.
+- [API Reference](api.md): every public class, method, model, enum, and exception.

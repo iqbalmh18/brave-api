@@ -1,17 +1,26 @@
-<img src="./brave-api.svg" alt="Brave API banner" />
+<img src="./brave-api.svg" alt="Brave API" />
 
 <p align="center">
   <a href="https://pypi.org/project/brave-api-python/">
-    <img src="https://img.shields.io/pypi/v/brave-api-python.svg?color=fe7039" alt="PyPI version" />
+    <img src="https://img.shields.io/pypi/v/brave-api-python.svg?style=flat&labelColor=0d1117&color=fe7039" alt="PyPI version" />
   </a>
   <a href="https://pypi.org/project/brave-api-python/">
-    <img src="https://img.shields.io/pypi/pyversions/brave-api-python.svg?color=fe7039" alt="Python versions" />
+    <img src="https://img.shields.io/pypi/pyversions/brave-api-python.svg?style=flat&labelColor=0d1117&color=fe7039" alt="Python versions" />
   </a>
   <a href="https://github.com/iqbalmh18/brave-api/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/iqbalmh18/brave-api/ci.yml?color=fe7039&label=CI" alt="CI" />
+    <img src="https://img.shields.io/github/actions/workflow/status/iqbalmh18/brave-api/ci.yml?style=flat&labelColor=0d1117&color=fe7039&label=CI" alt="CI" />
   </a>
   <a href="https://python-semantic-release.readthedocs.io/">
-    <img src="https://img.shields.io/badge/semantic--release-enabled-fe7039" alt="Semantic release" />
+    <img src="https://img.shields.io/badge/semantic--release-enabled-fe7039?style=flat&labelColor=0d1117" alt="Semantic release" />
+  </a>
+  <a href="https://brave-api.readthedocs.io/">
+    <img src="https://img.shields.io/readthedocs/brave-api.svg?style=flat&labelColor=0d1117&color=fe7039" alt="Documentation" />
+  </a>
+  <a href="https://github.com/iqbalmh18/brave-api/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/iqbalmh18/brave-api.svg?style=flat&labelColor=0d1117&color=fe7039" alt="License" />
+  </a>
+  <a href="https://github.com/iqbalmh18/brave-api">
+    <img src="https://img.shields.io/badge/typing-typed-fe7039?style=flat&labelColor=0d1117" alt="Typed Python" />
   </a>
 </p>
 

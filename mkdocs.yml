@@ -44,6 +44,7 @@ nav:
       - Search: guides/search.md
       - Conversations: guides/conversations.md
       - Configuration: guides/configuration.md
+      - Troubleshooting: guides/troubleshooting.md
       - MCP server: guides/mcp.md
   - API Reference: api.md
   - Examples: examples.md
@@ -71,14 +72,18 @@ plugins:
             Installation: Instalasi
             Quickstart: Mulai Cepat
             Guides: Panduan
+            Ask: Ask
+            Search: Search
             Conversations: Percakapan
             Configuration: Konfigurasi
+            Troubleshooting: Troubleshooting
             MCP server: Server MCP
             Streaming and results: Streaming dan hasil
             Errors and retries: Error dan retry
             API Reference: Referensi API
             Examples: Contoh
             Development: Pengembangan
+            Changelog: Changelog
         - locale: zh
           name: 简体中文
           build: true
@@ -88,14 +93,18 @@ plugins:
             Installation: 安装
             Quickstart: 快速开始
             Guides: 指南
+            Ask: Ask
+            Search: Search
             Conversations: 对话
             Configuration: 配置
+            Troubleshooting: 故障排查
             MCP server: MCP 服务
             Streaming and results: 流式响应与结果
             Errors and retries: 错误与重试
             API Reference: API 参考
             Examples: 示例
             Development: 开发
+            Changelog: 更新日志
   - mkdocstrings:
       handlers:
         python:
