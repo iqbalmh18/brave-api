@@ -168,6 +168,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/brave_daily/dist
 
 # mypy
 .mypy_cache/
@@ -218,3 +219,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+graphify-out/

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description"
+    content="Brave Daily — daily intelligence dashboard with downloadable datasets, threat feeds, trend radar, and market signals. Powered by brave-api." />
+  <meta name="keywords" content="intelligence, OSINT, threat feed, cybersecurity, market data, brave search, API" />
+  <title>Brave Daily — Daily Intelligence Dashboard</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="ambient-field" aria-hidden="true">
+    <span class="ambient-orb orb-a"></span>
+    <span class="ambient-orb orb-b"></span>
+    <span class="grid-overlay"></span>
+  </div>
+
+  <main class="shell">
+    <header class="topbar" id="topbar">
+      <a class="brand" href=".">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="3" />
+            <line x1="12" y1="3" x2="12" y2="6" />
+            <line x1="12" y1="18" x2="12" y2="21" />
+            <line x1="3" y1="12" x2="6" y2="12" />
+            <line x1="18" y1="12" x2="21" y2="12" />
+          </svg>
+        </span>
+        <span>Brave Daily</span>
+      </a>
+      <span class="masthead">DAILY INTELLIGENCE · BRAVE-API</span>
+      <div class="topbar-right">
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+        <span class="live-indicator" id="live-dot" aria-hidden="true">
+          <span class="pulse-dot"></span>
+          <span class="live-text">LIVE</span>
+        </span>
+        <a class="project" href="https://github.com/iqbalmh18/brave-api" target="_blank" rel="noopener">
+          <span>Source</span>
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M4 12L12 4M6 4h6v6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+    </header>
+
+    <nav class="tabs" id="module-tabs" aria-label="Intelligence modules">
+      <button class="tab active" data-module="pulse" id="tab-pulse">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <span class="tab-label">Global Pulse</span>
+      </button>
+      <button class="tab" data-module="trends" id="tab-trends">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+        <span class="tab-label">Trend Radar</span>
+      </button>
+      <button class="tab" data-module="threats" id="tab-threats">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+        <span class="tab-label">Threat Wire</span>
+      </button>
+      <button class="tab" data-module="market" id="tab-market">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <span class="tab-label">Market Scanner</span>
+      </button>
+      <button class="tab" data-module="datalab" id="tab-datalab">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        <span class="tab-label">Data Lab</span>
+      </button>
+      <button class="tab" data-module="playground" id="tab-playground">
+        <svg class="tab-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+        <span class="tab-label">Playground</span>
+      </button>
+    </nav>
+
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat" id="stat-articles">
+        <span class="stat-value" data-counter="0">—</span>
+        <span class="stat-label">Articles</span>
+      </div>
+      <div class="stat" id="stat-sources">
+        <span class="stat-value" data-counter="0">—</span>
+        <span class="stat-label">Sources</span>
+      </div>
+      <div class="stat" id="stat-threats">
+        <span class="stat-value" data-counter="0">—</span>
+        <span class="stat-label">Threats</span>
+      </div>
+      <div class="stat" id="stat-trends">
+        <span class="stat-value" data-counter="0">—</span>
+        <span class="stat-label">Trends</span>
+      </div>
+      <div class="stat" id="stat-generated">
+        <span class="stat-value">—</span>
+        <span class="stat-label">Generated</span>
+      </div>
+    </div>
+
+    <section id="app" aria-live="polite">
+      <p class="loading">
+        <span class="loading-spinner"></span>
+        Initializing Brave Daily…
+      </p>
+    </section>
+
+    <footer class="footer" id="footer">
+      <div>
+        <strong>Brave Daily</strong><br />
+        Daily intelligence dashboard powered by
+        <a href="https://github.com/iqbalmh18/brave-api" target="_blank" rel="noopener">brave-api</a>.
+      </div>
+      <div>
+        Discovery: Brave News · Brave Search<br />
+        Context: Images · Videos · Ask AI
+      </div>
+      <span class="footer-mark">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="4" />
+        </svg>
+      </span>
+    </footer>
+  </main>
+
+  <dialog id="detail-dialog">
+    <button class="dialog-close" aria-label="Close" id="dialog-close">×</button>
+    <div id="detail-content"></div>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+
+</html>
